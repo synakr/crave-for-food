@@ -1,50 +1,111 @@
-# Welcome to your Expo app 👋
+# 🍜 Crave
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A location-based food discovery app built with React Native and Expo.
 
-## Get started
+Instead of scrolling through a traditional social media feed, users explore food experiences directly on a map. Food photos appear as interactive bubbles pinned to real-world locations, allowing users to discover hidden food gems nearby.
 
-1. Install dependencies
+## ✨ Features
 
-   ```bash
-   npm install
-   ```
+- 🗺️ Interactive map-based exploration
+- 📍 Real-time user location
+- 🍕 Food posts pinned to locations
+- 🖼️ Image-based markers
+- 📱 Upload food photos from gallery
+- 💬 Detailed post modal with image and description
+- 🔍 Discovery-focused UI
+- 📌 Explore local food spots visually
+- 🎨 Clean, minimal and modern interface
 
-2. Start the app
+## 🚀 Vision
 
-   ```bash
-   npx expo start
-   ```
+Most social media platforms organize content around people.
 
-In the output, you'll find options to open the app in a
+Crave organizes content around places.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The goal is to help users discover:
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Hidden food spots
+- Local favorites
+- Trending eateries
+- Unique food experiences nearby
 
-## Get a fresh project
+through a visually immersive map experience.
 
-When you're ready, run:
+## 🛠️ Tech Stack
 
-```bash
-npm run reset-project
+### Frontend
+
+- React Native
+- Expo
+- Expo Router
+
+### Maps
+
+- react-native-maps
+
+### Device Features
+
+- expo-location
+- expo-image-picker
+
+### UI
+
+- @expo/vector-icons
+
+## 📂 Project Structure
+
+```text
+app/
+├── _layout.tsx
+├── index.tsx
+└── (tabs)/
+    ├── _layout.tsx
+    ├── explore.tsx
+    ├── saved.tsx
+    └── profile.tsx
+
+src/
+└── screens/
+    └── ExploreScreen.tsx
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🔮 Planned Features
 
-## Learn more
+### V1
 
-To learn more about developing your project with Expo, look at the following resources:
+- [ ] Upload caption support
+- [ ] Supabase backend integration
+- [ ] Persistent posts
+- [ ] 24-hour post expiry
+- [ ] Save/bookmark locations
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### V2
 
-## Join the community
+- [ ] Food clustering
+- [ ] Search locations
+- [ ] User profiles
+- [ ] Engagement metrics
 
-Join our community of developers creating universal apps.
+### Future Discovery Modes
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- 🍜 Food
+- ✈️ Travel
+- 💎 Hidden Gems
+- ☕ Cafés
+- 📸 Photography Spots
+- 🌃 Nightlife
+- 🎉 Events
+
+## 🧪 Current MVP Status
+
+- ✅ Map rendering
+- ✅ User location
+- ✅ Interactive food bubbles
+- ✅ Image upload
+- ✅ Modal previews
+- ✅ Modern UI
+- ✅ Tab navigation
+
+## 📜 License
+
+Built as an experimental location-based social discovery platform.
