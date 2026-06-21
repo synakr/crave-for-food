@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -22,26 +23,42 @@ const FOOD_POSTS = [
   {
     id: 1,
     image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
-    title: "Spicy Ramen",
-    description: "A hidden ramen spot with the richest broth ever.",
-    latitude: 19.061,
-    longitude: 72.829,
+    title: "Momos near Matabari",
+    description: "Hot momos just outside the temple area.",
+    latitude: 23.5335,
+    longitude: 91.4845,
   },
   {
     id: 2,
     image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38",
-    title: "Cheese Pizza",
-    description: "Tiny local pizza place serving wood-fired slices.",
-    latitude: 19.058,
-    longitude: 72.832,
+    title: "Pizza Point",
+    description: "Small pizza shop near Chandrapur.",
+    latitude: 23.5298,
+    longitude: 91.4888,
   },
   {
     id: 3,
+    image: "https://images.unsplash.com/photo-1550547660-d9450f859349",
+    title: "Burger Hub",
+    description: "Popular burger stall near Rajarbag.",
+    latitude: 23.5242,
+    longitude: 91.4932,
+  },
+  {
+    id: 4,
     image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4",
     title: "Hidden Café",
-    description: "Minimal café tucked inside a quiet street corner.",
-    latitude: 19.063,
-    longitude: 72.827,
+    description: "Quiet café overlooking the lake.",
+    latitude: 23.5368,
+    longitude: 91.4901,
+  },
+  {
+    id: 5,
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591",
+    title: "Late Night Pizza",
+    description: "Open till late near the market.",
+    latitude: 23.5273,
+    longitude: 91.4824,
   },
 ];
 
@@ -72,10 +89,10 @@ export default function HomeScreen() {
       });
     } catch (error) {
       setRegion({
-        latitude: 19.0596,
-        longitude: 72.8295,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
+        latitude: 23.5335,
+        longitude: 91.4845,
+        latitudeDelta: 0.03,
+        longitudeDelta: 0.03,
       });
     }
   };
@@ -126,7 +143,7 @@ export default function HomeScreen() {
         showsTraffic={false}
         showsIndoors={false}
         toolbarEnabled={false}
-        mapType="mutedStandard"
+        mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
         moveOnMarkerPress={false}>
         {[...FOOD_POSTS, ...userPosts].map((post) => (
           <Marker
@@ -149,7 +166,7 @@ export default function HomeScreen() {
       </View>
 
       <Pressable style={styles.fab} onPress={pickImage}>
-        <Ionicons name="add" size={30} color="#fff" />
+        <Ionicons name="add" size={32} color="#fff" />
       </Pressable>
 
       <Modal visible={!!selectedPost} transparent animationType="slide">
