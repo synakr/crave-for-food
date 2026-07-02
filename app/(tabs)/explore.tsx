@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import mapStyle from "@/constants/mapStyle";
 import { FOOD_POSTS } from "@/data/FoodPost";
 import FoodPostModal from "@/components/FoodPostModal";
+import CategoryChips from "@/components/CategoryChips";
 
 
 
@@ -167,16 +168,36 @@ export default function HomeScreen() {
       ))}
       </MapView>
 
-      <View style={styles.searchBar}>
-        <Ionicons
-          name="search"
-          size={20}
-          color="#B88A8A"
-        />
+      <View style={styles.searchContainer}>
+        <Pressable style={styles.circleButton}>
+          <Ionicons name="menu" size={24} color="#333" />
+        </Pressable>
 
-        <Text style={styles.searchText}>
-          Discover hidden food gems
-        </Text>
+        <Pressable style={styles.searchBar}>
+        <View style={styles.searchLeft}>
+          <Ionicons
+            name="search"
+            size={18}
+            color="#999"
+          />
+
+          <Text style={styles.searchText}>
+            Search food or place
+          </Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <Ionicons
+          name="options-outline"
+          size={22}
+          color="#F06B6B"
+        />
+      </Pressable>
+      </View>
+
+      <View style={styles.categories}>
+        <CategoryChips />
       </View>
 
       <Pressable
@@ -214,7 +235,7 @@ export default function HomeScreen() {
           color="#fff"
         />
       </Pressable>
-)}
+      )}
 
       {selectedPost && (
         <FoodPostModal
@@ -241,39 +262,40 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F4F2",
   },
 
-  searchBar: {
-    position: "absolute",
-    top: 70,
-    left: 20,
-    right: 20,
+searchBar: {
+  flex: 1,
+  height: 56,
 
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+  marginHorizontal: 12,
 
-    backgroundColor: "#FFF8F6",
+  borderRadius: 28,
+  backgroundColor: "#FFF",
 
-    paddingHorizontal: 22,
-    paddingVertical: 17,
+  flexDirection: "row",
+  alignItems: "center",
 
-    borderRadius: 999,
+  paddingHorizontal: 18,
 
-    shadowColor: "#B78E8E",
-    shadowOffset: {
-      width: 0,
-      height: 12,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-
-    elevation: 8,
+  shadowColor: "#000",
+  shadowOpacity: 0.08,
+  shadowRadius: 10,
+  shadowOffset: {
+    width: 0,
+    height: 4,
   },
 
-  searchText: {
-    color: "#6F5D5D",
-    fontSize: 15,
-    fontWeight: "600",
-  },
+  elevation: 4,
+
+  justifyContent: "space-between",
+
+},
+
+  // searchText: {
+  //   marginLeft: 10,
+  // fontSize: 16,
+  // color: "#7A7A7A",
+  // fontWeight: "500",
+  // },
 
   fab: {
     position: "absolute",
@@ -439,4 +461,59 @@ const styles = StyleSheet.create({
 
     elevation: 10,
   },
+  searchContainer: {
+  position: "absolute",
+  top: 60,
+  left: 16,
+  right: 16,
+  flexDirection: "row",
+  alignItems: "center",
+  zIndex: 100,
+},
+
+circleButton: {
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  backgroundColor: "#FFF",
+  justifyContent: "center",
+  alignItems: "center",
+
+  shadowColor: "#000",
+  shadowOpacity: 0.08,
+  shadowRadius: 10,
+  shadowOffset: {
+    width: 0,
+    height: 4,
+  },
+
+  elevation: 4,
+},
+categories: {
+  position: "absolute",
+  top: 128, // just below the search bar
+  left: 0,
+  right: 0,
+},
+
+searchLeft: {
+  flexDirection: "row",
+  alignItems: "center",
+  flex: 1,
+},
+
+searchText: {
+  marginLeft: 10,
+  fontSize: 16,
+  color: "#7A7A7A",
+  fontWeight: "500",
+},
+
+divider: {
+  width: 1,
+  height: 24,
+  backgroundColor: "#ECECEC",
+  marginHorizontal: 14,
+},
+
 });
