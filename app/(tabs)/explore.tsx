@@ -1,66 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   ActivityIndicator,
   Image,
-  Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
 import * as Location from "expo-location";
 
 import * as ImagePicker from "expo-image-picker";
 
 import { Ionicons } from "@expo/vector-icons";
+import mapStyle from "@/constants/mapStyle";
+import { FOOD_POSTS } from "@/data/FoodPost";
+import FoodPostModal from "@/components/FoodPostModal";
 
-const FOOD_POSTS = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
-    title: "Momos near Matabari",
-    description: "Hot momos just outside the temple area.",
-    latitude: 23.5335,
-    longitude: 91.4845,
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38",
-    title: "Pizza Point",
-    description: "Small pizza shop near Chandrapur.",
-    latitude: 23.5298,
-    longitude: 91.4888,
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1550547660-d9450f859349",
-    title: "Burger Hub",
-    description: "Popular burger stall near Rajarbag.",
-    latitude: 23.5242,
-    longitude: 91.4932,
-  },
-  {
-    id: 4,
-    image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4",
-    title: "Hidden Café",
-    description: "Quiet café overlooking the lake.",
-    latitude: 23.5368,
-    longitude: 91.4901,
-  },
-  {
-    id: 5,
-    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591",
-    title: "Late Night Pizza",
-    description: "Open till late near the market.",
-    latitude: 23.5273,
-    longitude: 91.4824,
-  },
-];
+
 
 export default function HomeScreen() {
   const [region, setRegion] = useState<any>(null);
@@ -94,6 +54,31 @@ export default function HomeScreen() {
         latitudeDelta: 0.03,
         longitudeDelta: 0.03,
       });
+    }
+  };
+
+  const mapRef = useRef<MapView>(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  const recenterMap = async () => {
+    if (!mapReady) return;
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const newRegion = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      };
+
+      setRegion(newRegion);
+
+      mapRef.current?.animateToRegion(newRegion, 600);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -134,63 +119,109 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
         initialRegion={region}
+        customMapStyle={mapStyle}
+        mapType="standard"
         showsUserLocation
         showsCompass={false}
         showsScale={false}
-        showsBuildings={true}
+        showsBuildings
         showsTraffic={false}
         showsIndoors={false}
         toolbarEnabled={false}
-        mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
-        moveOnMarkerPress={false}>
+        moveOnMarkerPress={false}
+        rotateEnabled={true}
+        pitchEnabled={true}
+        showsMyLocationButton={false}
+        onMapReady={() => setMapReady(true)}
+        loadingIndicatorColor="#C89B9B"
+        loadingBackgroundColor="#F8F4F2"
+      >
+
+        {/* floating images */}
         {[...FOOD_POSTS, ...userPosts].map((post) => (
-          <Marker
-            key={post.id}
-            coordinate={{
-              latitude: post.latitude,
-              longitude: post.longitude,
-            }}>
-            <Pressable onPress={() => setSelectedPost(post)}>
-              <Image source={{ uri: post.image }} style={styles.markerImage} />
-            </Pressable>
-          </Marker>
-        ))}
+        <Marker
+          key={post.id}
+          coordinate={{
+            latitude: post.latitude,
+            longitude: post.longitude,
+          }}
+          anchor={{ x: 0.5, y: 1.25 }}
+          onPress={() => setSelectedPost(post)}
+        >
+          <Image
+            source={{ uri: post.image }}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 10,
+              borderWidth: 3,
+              borderColor: "#fff",
+              backgroundColor: "#fff",
+            }}
+          />
+        </Marker>
+      ))}
       </MapView>
 
       <View style={styles.searchBar}>
-        <Ionicons name="search" size={20} color="#777" />
+        <Ionicons
+          name="search"
+          size={20}
+          color="#B88A8A"
+        />
 
-        <Text style={styles.searchText}>Discover food nearby</Text>
+        <Text style={styles.searchText}>
+          Discover hidden food gems
+        </Text>
       </View>
 
-      <Pressable style={styles.fab} onPress={pickImage}>
-        <Ionicons name="add" size={32} color="#fff" />
+      <Pressable
+        style={styles.navigationButton}
+        onPress={() => {
+          // TODO: Open navigation
+        }}
+      >
+        <Ionicons
+          name="navigate"
+          size={22}
+          color="#F06B6B"
+        />
       </Pressable>
 
-      <Modal visible={!!selectedPost} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.handle} />
+      <Pressable
+        style={styles.recenterButton}
+        onPress={recenterMap}
+      >
+        <Ionicons
+          name="locate"
+          size={22}
+          color="#8F6F6F"
+        />
+      </Pressable>
 
-            <Image
-              source={{ uri: selectedPost?.image }}
-              style={styles.modalImage}
-            />
+      {!selectedPost && (
+      <Pressable
+        style={styles.fab}
+        onPress={pickImage}
+      >
+        <Ionicons
+          name="add"
+          size={30}
+          color="#fff"
+        />
+      </Pressable>
+)}
 
-            <Text style={styles.title}>{selectedPost?.title}</Text>
-
-            <Text style={styles.description}>{selectedPost?.description}</Text>
-
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => setSelectedPost(null)}>
-              <Text style={styles.closeText}>Close</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      {selectedPost && (
+        <FoodPostModal
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+        />
+      )}
     </View>
   );
 }
@@ -202,9 +233,12 @@ const styles = StyleSheet.create({
 
   loader: {
     flex: 1,
+
     justifyContent: "center",
+
     alignItems: "center",
-    backgroundColor: "#fff",
+
+    backgroundColor: "#F8F4F2",
   },
 
   searchBar: {
@@ -215,101 +249,90 @@ const styles = StyleSheet.create({
 
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
 
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: "#FFF8F6",
 
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: 22,
+    paddingVertical: 17,
 
-    borderRadius: 100,
+    borderRadius: 999,
 
-    shadowColor: "#000",
+    shadowColor: "#B78E8E",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 12,
     },
     shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowRadius: 24,
 
-    elevation: 5,
+    elevation: 8,
   },
 
   searchText: {
-    color: "#777",
+    color: "#6F5D5D",
     fontSize: 15,
-  },
-
-  markerImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 100,
-
-    borderWidth: 4,
-    borderColor: "#fff",
-
-    backgroundColor: "#eee",
-
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-
-    elevation: 10,
+    fontWeight: "600",
   },
 
   fab: {
     position: "absolute",
-    bottom: 40,
-    right: 24,
 
-    width: 68,
-    height: 68,
-    borderRadius: 100,
+    bottom: 105, // <-- moved above the floating tab bar
+    right: 22,
 
-    backgroundColor: "#111",
+    width: 64,
+    height: 64,
+
+    borderRadius: 32,
+
+    backgroundColor: "#F06B6B",
 
     justifyContent: "center",
     alignItems: "center",
 
-    shadowColor: "#000",
+    shadowColor: "#B88A8A",
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 12,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
 
-    elevation: 10,
+    elevation: 20,
+
+    zIndex: 9999,
   },
 
   modalContainer: {
     flex: 1,
+
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.35)",
+
+    backgroundColor: "rgba(110,80,80,0.22)",
   },
 
   modalContent: {
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FFF8F6",
 
-    padding: 20,
-    paddingBottom: 35,
+    padding: 22,
+    paddingBottom: 36,
 
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
   },
 
   handle: {
-    width: 50,
-    height: 5,
-    borderRadius: 100,
-    backgroundColor: "#DDD",
+    width: 56,
+    height: 6,
+
+    borderRadius: 999,
+
+    backgroundColor: "#D9B8B8",
 
     alignSelf: "center",
-    marginBottom: 18,
+
+    marginBottom: 22,
   },
 
   modalImage: {
@@ -319,30 +342,101 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: "700",
-    marginTop: 16,
-    color: "#111",
+
+    marginTop: 18,
+
+    color: "#352727",
   },
 
   description: {
-    marginTop: 10,
+    marginTop: 12,
+
+    color: "#7D6666",
+
     fontSize: 16,
-    lineHeight: 24,
-    color: "#666",
+
+    lineHeight: 25,
   },
 
   closeButton: {
-    marginTop: 24,
-    backgroundColor: "#111",
-    paddingVertical: 16,
+    marginTop: 28,
+
+    backgroundColor: "#C89B9B",
+
+    paddingVertical: 17,
+
     borderRadius: 18,
+
     alignItems: "center",
   },
 
   closeText: {
-    color: "#fff",
+    color: "#FFF",
+
     fontSize: 16,
-    fontWeight: "600",
+
+    fontWeight: "700",
+  },
+  
+  recenterButton: {
+    position: "absolute",
+
+    right: 22,
+    bottom: 178,
+
+    width: 54,
+    height: 54,
+
+    borderRadius: 27,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    backgroundColor: "rgba(255,248,246,0.92)",
+
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.6)",
+
+    shadowColor: "#B88A8A",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+
+    elevation: 10,
+  },
+
+  navigationButton: {
+    position: "absolute",
+
+    right: 22,
+    bottom: 242,
+
+    width: 54,
+    height: 54,
+
+    borderRadius: 27,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    backgroundColor: "rgba(255,248,246,0.92)",
+
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.6)",
+
+    shadowColor: "#B88A8A",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+
+    elevation: 10,
   },
 });

@@ -1,40 +1,78 @@
 import { Tabs } from "expo-router";
-
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { StyleSheet } from "react-native";
+import FloatingTabBar from "@/components/FloatingTabBar";
 
 export default function TabLayout() {
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
-        headerShown: true,
+        headerShown: false,
+
+        tabBarShowLabel: false,
+
+        tabBarActiveTintColor: "#C89B9B",
+        tabBarInactiveTintColor: "#A99595",
+
+        tabBarHideOnKeyboard: true,
 
         tabBarStyle: {
           position: "absolute",
-          bottom: 20,
-          left: 20,
-          right: 20,
 
-          borderRadius: 100,
+          left: 16,
+          right: 16,
+          bottom: 18,
 
-          height: 70,
+          height: 82,
 
-          paddingBottom: 10,
-          paddingTop: 10,
+          borderRadius: 30,
 
-          backgroundColor: "rgba(255,255,255,0.95)",
+          backgroundColor: "transparent",
 
           borderTopWidth: 0,
 
           elevation: 0,
+
+          overflow: "hidden",
+
+          shadowColor: "#352727",
+          shadowOffset: {
+            width: 0,
+            height: 10,
+          },
+          shadowOpacity: 0.08,
+          shadowRadius: 26,
         },
-      }}>
+
+        tabBarItemStyle: {
+          marginVertical: 10,
+          borderRadius: 18,
+        },
+
+        tabBarIconStyle: {
+          marginTop: 2,
+        },
+
+        tabBarBackground: () => (
+          <BlurView
+            tint="light"
+            intensity={95}
+            style={StyleSheet.absoluteFill}
+          />
+        ),
+      }}
+    >
       <Tabs.Screen
         name="explore"
         options={{
-          title: "Explore",
-
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "compass" : "compass-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -42,10 +80,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="saved"
         options={{
-          title: "Saved",
-
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bookmark" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "bookmark" : "bookmark-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -53,10 +93,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
-
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "person" : "person-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
