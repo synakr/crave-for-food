@@ -11,7 +11,7 @@ export default function RootLayout() {
           headerShown: false,
           animation: "fade",
           contentStyle: {
-            backgroundColor: "#F8F4F2",
+            backgroundColor: "#F8BFD0",
           },
         }}
       />

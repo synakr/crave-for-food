@@ -1,5 +1,5 @@
-import { Redirect } from "expo-router";
+import LaunchScreen from "@/components/LaunchScreen";
 
 export default function Index() {
-  return <Redirect href="/(tabs)/explore" />;
+  return <LaunchScreen />;
 }
