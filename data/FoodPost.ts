@@ -287,4 +287,163 @@ export const FOOD_POSTS = [
     likes: 72,
     tags: ["Breakfast", "Pancakes", "Cafe"],
   },
+  {
+    id: 16,
+    image: "https://images.unsplash.com/photo-1565299507177-b0ac66763828",
+    title: "Campus Momos",
+    description:
+      "Steaming hot momos that are perfect after evening classes. A student favorite!",
+    latitude: 23.8415,
+    longitude: 91.4198,
+
+    user: {
+      name: "Rahul",
+      avatar: "https://i.pravatar.cc/150?img=11",
+    },
+
+    location: "NIT Agartala",
+    time: "25m ago",
+    likes: 46,
+    tags: ["Momos", "Campus", "Student Favorite"],
+  },
+
+  {
+    id: 17,
+    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a",
+    title: "Chai & Bun Maska",
+    description:
+      "Simple chai with buttery bun maska. The perfect quick break between lectures.",
+    latitude: 23.8389,
+    longitude: 91.4221,
+
+    user: {
+      name: "Sneha",
+      avatar: "https://i.pravatar.cc/150?img=25",
+    },
+
+    location: "NIT Main Gate",
+    time: "1h ago",
+    likes: 73,
+    tags: ["Chai", "Snacks", "Budget"],
+  },
+
+  {
+    id: 18,
+    image: "https://images.unsplash.com/photo-1579751626657-72bc17010498",
+    title: "Jirania Roll Corner",
+    description:
+      "Loaded egg chicken rolls with spicy sauce. Great for a quick evening snack.",
+    latitude: 23.8423,
+    longitude: 91.4235,
+
+    user: {
+      name: "Aditya",
+      avatar: "https://i.pravatar.cc/150?img=14",
+    },
+
+    location: "Jirania",
+    time: "2h ago",
+    likes: 61,
+    tags: ["Roll", "Chicken", "Street Food"],
+  },
+
+  {
+    id: 19,
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd",
+    title: "Hostel Burger Stop",
+    description:
+      "Crispy chicken burgers and fries at pocket-friendly prices. Perfect for hostel cravings.",
+    latitude: 23.8377,
+    longitude: 91.434,
+
+    user: {
+      name: "Kunal",
+      avatar: "https://i.pravatar.cc/150?img=8",
+    },
+
+    location: "Near NIT Hostels",
+    time: "3h ago",
+    likes: 89,
+    tags: ["Burger", "Fries", "Hostel"],
+  },
+
+  {
+    id: 20,
+    image: "https://images.unsplash.com/photo-1601050690597-df0568f70950",
+    title: "Evening Samosa Spot",
+    description:
+      "Crispy samosas with spicy chutney. Usually crowded around sunset.",
+    latitude: 23.8441,
+    longitude: 91.434,
+
+    user: {
+      name: "Priyanka",
+      avatar: "https://i.pravatar.cc/150?img=45",
+    },
+
+    location: "Jirania Market",
+    time: "4h ago",
+    likes: 52,
+    tags: ["Samosa", "Tea", "Evening"],
+  },
+
+  {
+    id: 21,
+    image: "https://images.unsplash.com/photo-1563379091339-03246963d96c",
+    title: "Late Night Chowmein",
+    description:
+      "Spicy chicken chowmein that's become a go-to for late-night hostel cravings.",
+    latitude: 23.8359,
+    longitude: 91.434,
+
+    user: {
+      name: "Vikram",
+      avatar: "https://i.pravatar.cc/150?img=17",
+    },
+
+    location: "Near NIT Gate",
+    time: "6h ago",
+    likes: 94,
+    tags: ["Chowmein", "Chicken", "Late Night"],
+  },
+
+  {
+    id: 22,
+    image: "https://images.unsplash.com/photo-1552566626-52f8b828add9",
+    title: "Student Café",
+    description:
+      "Quiet little café with cold coffee, sandwiches and plenty of seating for students.",
+    latitude: 23.846,
+    longitude: 91.4319,
+
+    user: {
+      name: "Isha",
+      avatar: "https://i.pravatar.cc/150?img=36",
+    },
+
+    location: "Jirania",
+    time: "8h ago",
+    likes: 77,
+    tags: ["Cafe", "Coffee", "Study Spot"],
+  },
+
+  {
+    id: 23,
+    image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b",
+    title: "Fried Rice Junction",
+    description:
+      "Hot fried rice with chilli chicken. Generous portions and very student-friendly prices.",
+    latitude: 23.8394,
+    longitude: 91.4251,
+
+    user: {
+      name: "Aman",
+      avatar: "https://i.pravatar.cc/150?img=52",
+    },
+
+    location: "Jirania Road",
+    time: "10h ago",
+    likes: 68,
+    tags: ["Fried Rice", "Chicken", "Budget"],
+  },
 ];
