@@ -1,221 +1,335 @@
-import React from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
-import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BlurView } from "expo-blur";
+import * as ImagePicker from "expo-image-picker";
+import React from "react";
+import {
+  Dimensions,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
 import Animated, {
+  ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { Dimensions } from "react-native";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+const TAB_BAR_HEIGHT = 58;
+const PLUS_SIZE = 58;
+const HORIZONTAL_MARGIN = 20;
+const PLUS_GAP = 12;
 
 export default function FloatingTabBar({
   state,
   descriptors,
   navigation,
 }: BottomTabBarProps) {
+  const barWidth = SCREEN_WIDTH - HORIZONTAL_MARGIN * 2 - PLUS_SIZE - PLUS_GAP;
 
-const BAR_WIDTH = Dimensions.get("window").width - 36;
-const TAB_WIDTH = BAR_WIDTH / state.routes.length;
+  const tabWidth = barWidth / state.routes.length;
 
-const indicatorX = useSharedValue(6);
+  // Active tab sliding animation
+  const indicatorX = useSharedValue(5);
 
-React.useEffect(() => {
-  indicatorX.value = withSpring(state.index * TAB_WIDTH + 6, {
-    damping: 18,
-    stiffness: 170,
-  });
-}, [state.index, TAB_WIDTH]);
+  React.useEffect(() => {
+    indicatorX.value = withSpring(state.index * tabWidth + 5, {
+      damping: 30,
+      stiffness: 110,
+      mass: 0.9,
+      reduceMotion: ReduceMotion.Never,
+    });
+  }, [state.index, tabWidth]);
 
-const animatedStyle = useAnimatedStyle(() => ({
-  transform: [{ translateX: indicatorX.value }],
-}));
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: indicatorX.value }],
+  }));
+
+  // Open image picker
+  const handleUpload = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const image = result.assets[0];
+
+    navigation.navigate("explore", {
+      uploadedImage: image.uri,
+      uploadId: Date.now().toString(),
+    });
+  };
 
   return (
     <View style={styles.wrapper}>
-      <BlurView
-        intensity={95}
-        tint="light"
-        style={styles.container}
-      >
-        <View style={styles.glassHighlight} />
+      {/* TAB BAR */}
+      <View style={[styles.barContainer, { width: barWidth }]}>
+        <BlurView
+          intensity={Platform.OS === "ios" ? 55 : 40}
+          tint="light"
+          style={styles.tabBar}>
+          {/* Active tab indicator */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.activeIndicator,
+              {
+                width: tabWidth - 10,
+              },
+              indicatorStyle,
+            ]}
+          />
 
-        <Animated.View
-          style={[
-            styles.activeIndicator,
-            {
-              width: TAB_WIDTH - 12,
-              left: 6,
-            },
-            animatedStyle,
-          ]}
-        />
+          {/* Tabs */}
+          {state.routes.map((route) => {
+            const focused = state.index === state.routes.indexOf(route);
 
-        {state.routes.map((route, index) => {
-          const focused = state.index === index;
+            const { options } = descriptors[route.key];
 
-          const { options } = descriptors[route.key];
+            const onPress = () => {
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: "tabPress",
-              target: route.key,
-              canPreventDefault: true,
-            });
+              if (!focused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
 
-            if (!focused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
+            let icon: keyof typeof Ionicons.glyphMap = "ellipse-outline";
+
+            switch (route.name) {
+              case "explore":
+                icon = focused ? "compass" : "compass-outline";
+                break;
+
+              case "saved":
+                icon = focused ? "bookmark" : "bookmark-outline";
+                break;
+
+              case "activity":
+                icon = focused ? "heart" : "heart-outline";
+                break;
+
+              case "profile":
+                icon = focused ? "person" : "person-outline";
+                break;
             }
-          };
 
-          let icon: keyof typeof Ionicons.glyphMap = "ellipse";
+            const label =
+              options.title ??
+              route.name.charAt(0).toUpperCase() + route.name.slice(1);
 
-          switch (route.name) {
-            case "explore":
-              icon = focused ? "compass" : "compass-outline";
-              break;
+            return (
+              <Pressable
+                key={route.key}
+                onPress={onPress}
+                style={styles.tabItem}>
+                <Ionicons
+                  name={icon}
+                  size={20}
+                  color={focused ? "#111" : "rgba(17,17,17,0.5)"}
+                />
 
-            case "saved":
-              icon = focused ? "bookmark" : "bookmark-outline";
-              break;
+                <Text style={[styles.label, focused && styles.activeLabel]}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </BlurView>
+      </View>
 
-            case "activity":
-              icon = focused ? "heart" : "heart-outline";
-              break;
-
-            case "profile":
-              icon = focused ? "person" : "person-outline";
-              break;
-          }
-
-          const label =
-            options.title ??
-            (typeof options.tabBarLabel === "string"
-              ? options.tabBarLabel
-              : route.name.charAt(0).toUpperCase() +
-                route.name.slice(1));
-
-          return (
-            <Pressable
-              key={route.key}
-              onPress={onPress}
-              style={styles.item}
-            >
-              <Ionicons
-                name={icon}
-                size={22}
-                color={focused ? "#F06B6B" : "#907D7D"}
-              />
-
-              <Text
-                style={[
-                  styles.label,
-                  focused && styles.activeLabel,
-                ]}
-              >
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </BlurView>
+      {/* PLUS / UPLOAD BUTTON */}
+      <Pressable
+        onPress={handleUpload}
+        style={({ pressed }) => [
+          styles.plusButton,
+          pressed && styles.plusPressed,
+        ]}>
+        <Ionicons name="add" size={32} color="#FFFFFF" />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  /* ================================
+     WRAPPER
+  ================================= */
+
   wrapper: {
     position: "absolute",
-    left: 18,
-    right: 18,
-    bottom: 18,
+
+    left: HORIZONTAL_MARGIN,
+    right: HORIZONTAL_MARGIN,
+    bottom: 16,
+
+    height: TAB_BAR_HEIGHT,
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    gap: PLUS_GAP,
   },
 
-container: {
-  height: 74,
+  /* ================================
+     TAB BAR
+  ================================= */
 
-  borderRadius: 37,
+  barContainer: {
+    height: TAB_BAR_HEIGHT,
+    borderRadius: TAB_BAR_HEIGHT / 2,
+    overflow: "hidden",
 
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-around",
+    backgroundColor: "rgba(255,255,255,0.72)",
 
-  overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.8)",
 
-  backgroundColor: "rgba(255,255,255,0.28)",
-
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.55)",
-
-  shadowColor: "#A88787",
-  shadowOffset: {
-    width: 0,
-    height: 16,
+    ...(Platform.OS === "android" && {
+      elevation: 2,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.08,
+      shadowRadius: 5,
+    }),
   },
-  shadowOpacity: 0.12,
-  shadowRadius: 28,
 
-  elevation: 18,
-},
+  tabBar: {
+    flex: 1,
 
-item: {
-  flex: 1,
+    height: TAB_BAR_HEIGHT,
 
-  height: 74,
+    flexDirection: "row",
+    alignItems: "center",
 
-  alignItems: "center",
-  justifyContent: "center",
+    overflow: "hidden",
 
-  zIndex: 2,
-},
-
-label: {
-  marginTop: 4,
-  fontSize: 11,
-  fontWeight: "600",
-  color: "#8F7D7D",
-},
-
-activeLabel: {
-  color: "#F06B6B",
-},
-
-activeIndicator: {
-  position: "absolute",
-
-  top: 9,
-
-  height: 56,
-
-  borderRadius: 28,
-
-  backgroundColor: "rgba(255,255,255,0.42)",
-
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.75)",
-
-  shadowColor: "#FFFFFF",
-  shadowOffset: {
-    width: 0,
-    height: 1,
+    backgroundColor: "rgba(255,255,255,0.45)",
   },
-  shadowOpacity: 0.8,
-  shadowRadius: 12,
 
-  zIndex: 1,
-},
-glassHighlight: {
-  position: "absolute",
+  /* ================================
+     ACTIVE TAB
+  ================================= */
 
-  top: 0,
-  left: 24,
-  right: 24,
+  activeIndicator: {
+    position: "absolute",
 
-  height: 1,
+    left: -1,
+    top: 4,
 
-  backgroundColor: "rgba(255,255,255,0.7)",
+    height: TAB_BAR_HEIGHT - 10,
 
-  zIndex: 3,
-},
+    borderRadius: (TAB_BAR_HEIGHT - 10) / 2,
+
+    backgroundColor: "rgba(235,235,238,0.75)",
+
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.65)",
+
+    // Only shadow in the component
+    shadowColor: "#000",
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+
+    elevation: 2,
+  },
+
+  /* ================================
+     TAB ITEM
+  ================================= */
+
+  tabItem: {
+    flex: 1,
+
+    height: TAB_BAR_HEIGHT,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    zIndex: 2,
+  },
+
+  label: {
+    marginTop: 1,
+
+    fontSize: 10,
+    fontWeight: "500",
+
+    color: "rgba(17,17,17,0.5)",
+  },
+
+  activeLabel: {
+    color: "#111",
+
+    fontWeight: "600",
+  },
+
+  /* ================================
+   PLUS BUTTON
+================================= */
+
+  plusButton: {
+    width: PLUS_SIZE,
+    height: PLUS_SIZE,
+
+    borderRadius: PLUS_SIZE / 2,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    // Dark circle
+    backgroundColor: "#040404",
+
+    // White border
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+
+    // Shadow
+    ...(Platform.OS === "android"
+      ? {
+          elevation: 5,
+        }
+      : {
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: 4,
+          },
+          shadowOpacity: 0.18,
+          shadowRadius: 6,
+        }),
+  },
+
+  plusPressed: {
+    transform: [{ scale: 0.94 }],
+  },
 });
