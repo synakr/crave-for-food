@@ -1,12 +1,12 @@
-import { useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   ActivityIndicator,
   Image,
   Pressable,
   StyleSheet,
-  View
+  Text,
+  View,
 } from "react-native";
 
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
@@ -16,36 +16,75 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 
 import CategoryChips from "@/components/CategoryChips";
-import FoodPostModal from "@/components/FoodPostModal";
+import FoodPostModal from "@/components/PostModal";
 import mapStyle from "@/constants/mapStyle";
-import { FOOD_POSTS } from "@/data/FoodPost";
+import { seedMockDatabase } from "@/data/mock/seed";
+import { postRepository } from "@/data/repositories";
+import type { ExplorePost } from "@/data/repositories/PostRepository";
+
+interface MapRegion {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
 
 export default function HomeScreen() {
-  const [region, setRegion] = useState<any>(null);
-  const [selectedPost, setSelectedPost] = useState<any>(null);
-  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [region, setRegion] = useState<MapRegion | null>(null);
 
-  const mapRef = useRef<MapView>(null);
+  const [selectedPost, setSelectedPost] = useState<ExplorePost | null>(null);
+
+  const [posts, setPosts] = useState<ExplorePost[]>([]);
+
   const [mapReady, setMapReady] = useState(false);
 
-  const { uploadedImage, uploadId } = useLocalSearchParams<{
-    uploadedImage?: string;
-    uploadId?: string;
-  }>();
+  const [loadedMarkers, setLoadedMarkers] = useState<Set<string>>(new Set());
+
+  const mapRef = useRef<MapView>(null);
+
+  /* ================================
+     LOAD POSTS
+  ================================= */
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPosts = async () => {
+      seedMockDatabase();
+
+      const data = await postRepository.getExplorePosts();
+
+      if (!mounted) return;
+
+      setPosts(data);
+    };
+
+    loadPosts();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   /* ================================
      LOCATION
   ================================= */
 
-  useEffect(() => {
-    getLocation();
-  }, []);
-
-  const getLocation = async () => {
+  const getLocation = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
-      if (status !== "granted") return;
+      if (status !== "granted") {
+        // Keep the app usable even without permission.
+        setRegion({
+          latitude: 23.5335,
+          longitude: 91.4845,
+          latitudeDelta: 0.03,
+          longitudeDelta: 0.03,
+        });
+
+        return;
+      }
 
       const location = await Location.getCurrentPositionAsync({});
 
@@ -56,6 +95,8 @@ export default function HomeScreen() {
         longitudeDelta: 0.02,
       });
     } catch (error) {
+      console.log("Failed to get location:", error);
+
       setRegion({
         latitude: 23.5335,
         longitude: 91.4845,
@@ -63,40 +104,34 @@ export default function HomeScreen() {
         longitudeDelta: 0.03,
       });
     }
-  };
-
-  /* ================================
-     HANDLE UPLOAD FROM TAB BAR
-  ================================= */
+  }, []);
 
   useEffect(() => {
-    if (!uploadedImage || !region) return;
+    getLocation();
+  }, [getLocation]);
 
-    const newPost = {
-      id: uploadId ?? Date.now().toString(),
-      image: uploadedImage,
-      title: "New Food Spot",
-      description: "Freshly uploaded from this location.",
-      latitude: region.latitude,
-      longitude: region.longitude,
-    };
+  /* ================================
+     MARKER IMAGE LOADED
+  ================================= */
 
-    setUserPosts((prev) => {
-      // Prevent duplicate post when navigation params
-      // are processed more than once.
-      if (prev.some((post) => String(post.id) === String(newPost.id))) {
-        return prev;
+  const handleMarkerImageLoad = useCallback((postId: string) => {
+    setLoadedMarkers((previous) => {
+      if (previous.has(postId)) {
+        return previous;
       }
 
-      return [...prev, newPost];
+      const next = new Set(previous);
+      next.add(postId);
+
+      return next;
     });
-  }, [uploadedImage, uploadId, region]);
+  }, []);
 
   /* ================================
      RECENTER
   ================================= */
 
-  const recenterMap = async () => {
+  const recenterMap = useCallback(async () => {
     if (!mapReady) return;
 
     try {
@@ -104,7 +139,7 @@ export default function HomeScreen() {
         accuracy: Location.Accuracy.High,
       });
 
-      const newRegion = {
+      const newRegion: MapRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         latitudeDelta: 0.02,
@@ -115,9 +150,9 @@ export default function HomeScreen() {
 
       mapRef.current?.animateToRegion(newRegion, 600);
     } catch (error) {
-      console.log(error);
+      console.log("Failed to recenter:", error);
     }
-  };
+  }, [mapReady]);
 
   /* ================================
      LOADING
@@ -160,38 +195,51 @@ export default function HomeScreen() {
         onMapReady={() => setMapReady(true)}
         loadingIndicatorColor="#C89B9B"
         loadingBackgroundColor="#F8F4F2">
-        {/* FOOD POSTS */}
+        {posts.map((post) => {
+          const imageLoaded = loadedMarkers.has(post.id);
 
-        {[...FOOD_POSTS, ...userPosts].map((post) => (
-          <Marker
-            key={post.id}
-            coordinate={{
-              latitude: post.latitude,
-              longitude: post.longitude,
-            }}
-            anchor={{
-              x: 0.5,
-              y: 1.25,
-            }}
-            onPress={() => setSelectedPost(post)}>
-            <Image
-              source={{
-                uri: post.image,
+          return (
+            <Marker
+              key={post.id}
+              coordinate={{
+                latitude: post.latitude,
+                longitude: post.longitude,
               }}
-              style={styles.markerImage}
-            />
-          </Marker>
-        ))}
+              anchor={{
+                x: 0.5,
+                y: 1.25,
+              }}
+              tracksViewChanges={!loadedMarkers.has(post.id)}
+              onPress={() => {
+                Image.prefetch(post.image);
+                setSelectedPost(post);
+              }}>
+              <Image
+                source={{
+                  uri: post.image,
+                }}
+                style={styles.markerImage}
+                onLoad={() => handleMarkerImageLoad(post.id)}
+              />
+            </Marker>
+          );
+        })}
       </MapView>
 
       {/* SEARCH */}
 
-      {/* <View style={styles.searchContainer}>
-        <Pressable style={styles.circleButton}>
+      <View style={styles.searchContainer}>
+        <Pressable
+          style={styles.circleButton}
+          accessibilityRole="button"
+          accessibilityLabel="Open menu">
           <Ionicons name="menu" size={24} color="#333" />
         </Pressable>
 
-        <Pressable style={styles.searchBar}>
+        <Pressable
+          style={styles.searchBar}
+          accessibilityRole="button"
+          accessibilityLabel="Search food or place">
           <View style={styles.searchLeft}>
             <Ionicons name="search" size={18} color="#999" />
 
@@ -202,7 +250,7 @@ export default function HomeScreen() {
 
           <Ionicons name="options-outline" size={22} color="#F06B6B" />
         </Pressable>
-      </View> */}
+      </View>
 
       {/* CATEGORIES */}
 
@@ -210,19 +258,13 @@ export default function HomeScreen() {
         <CategoryChips />
       </View>
 
-      {/* NAVIGATION */}
-
-      {/* <Pressable
-        style={styles.navigationButton}
-        onPress={() => {
-          // TODO: Open navigation
-        }}>
-        <Ionicons name="navigate" size={22} color="#F06B6B" />
-      </Pressable> */}
-
       {/* RECENTER */}
 
-      <Pressable style={styles.recenterButton} onPress={recenterMap}>
+      <Pressable
+        style={styles.recenterButton}
+        onPress={recenterMap}
+        accessibilityRole="button"
+        accessibilityLabel="Recenter map">
         <Ionicons name="locate" size={22} color="#8F6F6F" />
       </Pressable>
 
@@ -371,40 +413,6 @@ const styles = StyleSheet.create({
 
     left: 0,
     right: 0,
-  },
-
-  /* NAVIGATION */
-
-  navigationButton: {
-    position: "absolute",
-
-    right: 22,
-    bottom: 242,
-
-    width: 54,
-    height: 54,
-
-    borderRadius: 27,
-
-    justifyContent: "center",
-    alignItems: "center",
-
-    backgroundColor: "rgba(255,248,246,0.92)",
-
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.6)",
-
-    shadowColor: "#B88A8A",
-
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-
-    elevation: 10,
   },
 
   /* RECENTER */
