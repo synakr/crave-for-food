@@ -532,7 +532,71 @@ export function seedMockDatabase() {
 
   db.likes = [];
 
-  db.comments = [];
+  db.comments = [
+    {
+      id: "comment-1",
+      post_id: "post-1",
+      user_id: "user-2",
+      parent_comment_id: null,
+      content: "These momos look 🔥",
+      created_at: hoursAgo(0.5),
+      updated_at: hoursAgo(0.5),
+    },
+    {
+      id: "comment-2",
+      post_id: "post-1",
+      user_id: "user-3",
+      parent_comment_id: null,
+      content: "Definitely trying this place!",
+      created_at: hoursAgo(0.3),
+      updated_at: hoursAgo(0.3),
+    },
+    {
+      id: "comment-3",
+      post_id: "post-1",
+      user_id: "user-5",
+      parent_comment_id: "comment-1",
+      content: "Right?? They look so good 😂",
+      created_at: hoursAgo(0.2),
+      updated_at: hoursAgo(0.2),
+    },
+    {
+      id: "comment-4",
+      post_id: "post-2",
+      user_id: "user-4",
+      parent_comment_id: null,
+      content: "Student-friendly prices are always a win 👀",
+      created_at: hoursAgo(1),
+      updated_at: hoursAgo(1),
+    },
+    {
+      id: "comment-5",
+      post_id: "post-2",
+      user_id: "user-6",
+      parent_comment_id: null,
+      content: "How's the crust?",
+      created_at: hoursAgo(0.8),
+      updated_at: hoursAgo(0.8),
+    },
+    {
+      id: "comment-6",
+      post_id: "post-3",
+      user_id: "user-7",
+      parent_comment_id: null,
+      content: "That burger looks insane 🤤",
+      created_at: hoursAgo(2),
+      updated_at: hoursAgo(2),
+    },
+    {
+      id: "comment-7",
+      post_id: "post-4",
+      user_id: "user-8",
+      parent_comment_id: null,
+      content: "The lake view makes it even better!",
+      created_at: hoursAgo(1.5),
+      updated_at: hoursAgo(1.5),
+    },
+  ];
 
   db.follows = [];
 

@@ -1,19 +1,16 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import {
   ActivityIndicator,
   Image,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-
-import * as Location from "expo-location";
-
-import { Ionicons } from "@expo/vector-icons";
 
 import CategoryChips from "@/components/CategoryChips";
 import FoodPostModal from "@/components/PostModal";
@@ -31,20 +28,15 @@ interface MapRegion {
 
 export default function HomeScreen() {
   const [region, setRegion] = useState<MapRegion | null>(null);
-
   const [selectedPost, setSelectedPost] = useState<ExplorePost | null>(null);
-
   const [posts, setPosts] = useState<ExplorePost[]>([]);
-
   const [mapReady, setMapReady] = useState(false);
 
   const [loadedMarkers, setLoadedMarkers] = useState<Set<string>>(new Set());
 
   const mapRef = useRef<MapView>(null);
 
-  /* ================================
-     LOAD POSTS
-  ================================= */
+  /* LOAD POSTS */
 
   useEffect(() => {
     let mounted = true;
@@ -53,6 +45,12 @@ export default function HomeScreen() {
       seedMockDatabase();
 
       const data = await postRepository.getExplorePosts();
+
+      if (!mounted) return;
+
+      await Promise.all(
+        data.map((post) => Image.prefetch(post.image).catch(() => false)),
+      );
 
       if (!mounted) return;
 
@@ -66,16 +64,13 @@ export default function HomeScreen() {
     };
   }, []);
 
-  /* ================================
-     LOCATION
-  ================================= */
+  /* LOCATION */
 
   const getLocation = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        // Keep the app usable even without permission.
         setRegion({
           latitude: 23.5335,
           longitude: 91.4845,
@@ -110,26 +105,26 @@ export default function HomeScreen() {
     getLocation();
   }, [getLocation]);
 
-  /* ================================
-     MARKER IMAGE LOADED
-  ================================= */
+  /* MARKER IMAGE LOADED */
 
   const handleMarkerImageLoad = useCallback((postId: string) => {
-    setLoadedMarkers((previous) => {
-      if (previous.has(postId)) {
-        return previous;
-      }
+    const delay = Platform.OS === "android" ? 120 : 0;
 
-      const next = new Set(previous);
-      next.add(postId);
+    setTimeout(() => {
+      setLoadedMarkers((previous) => {
+        if (previous.has(postId)) {
+          return previous;
+        }
 
-      return next;
-    });
+        const next = new Set(previous);
+        next.add(postId);
+
+        return next;
+      });
+    }, delay);
   }, []);
 
-  /* ================================
-     RECENTER
-  ================================= */
+  /* RECENTER */
 
   const recenterMap = useCallback(async () => {
     if (!mapReady) return;
@@ -154,9 +149,7 @@ export default function HomeScreen() {
     }
   }, [mapReady]);
 
-  /* ================================
-     LOADING
-  ================================= */
+  /* LOADING */
 
   if (!region) {
     return (
@@ -165,10 +158,6 @@ export default function HomeScreen() {
       </View>
     );
   }
-
-  /* ================================
-     RENDER
-  ================================= */
 
   return (
     <View style={styles.container}>
@@ -195,35 +184,33 @@ export default function HomeScreen() {
         onMapReady={() => setMapReady(true)}
         loadingIndicatorColor="#C89B9B"
         loadingBackgroundColor="#F8F4F2">
-        {posts.map((post) => {
-          const imageLoaded = loadedMarkers.has(post.id);
-
-          return (
-            <Marker
-              key={post.id}
-              coordinate={{
-                latitude: post.latitude,
-                longitude: post.longitude,
+        {posts.map((post) => (
+          <Marker
+            key={post.id}
+            coordinate={{
+              latitude: post.latitude,
+              longitude: post.longitude,
+            }}
+            anchor={{
+              x: 0.5,
+              y: 1.25,
+            }}
+            tracksViewChanges={!loadedMarkers.has(post.id)}
+            onPress={() => {
+              Image.prefetch(post.image);
+              setSelectedPost(post);
+            }}>
+            <Image
+              source={{
+                uri: post.image,
               }}
-              anchor={{
-                x: 0.5,
-                y: 1.25,
-              }}
-              tracksViewChanges={!loadedMarkers.has(post.id)}
-              onPress={() => {
-                Image.prefetch(post.image);
-                setSelectedPost(post);
-              }}>
-              <Image
-                source={{
-                  uri: post.image,
-                }}
-                style={styles.markerImage}
-                onLoad={() => handleMarkerImageLoad(post.id)}
-              />
-            </Marker>
-          );
-        })}
+              style={styles.markerImage}
+              resizeMode="cover"
+              fadeDuration={0}
+              onLoadEnd={() => handleMarkerImageLoad(post.id)}
+            />
+          </Marker>
+        ))}
       </MapView>
 
       {/* SEARCH */}
@@ -280,10 +267,6 @@ export default function HomeScreen() {
   );
 }
 
-/* ================================
-   STYLES
-================================= */
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -296,156 +279,109 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F4F2",
   },
 
-  /* MAP MARKER */
-
   markerImage: {
     width: 56,
     height: 56,
-
     borderRadius: 10,
-
     borderWidth: 3,
-    borderColor: "#fff",
-
-    backgroundColor: "#fff",
+    borderColor: "#FFFFFF",
+    backgroundColor: "#FFFFFF",
+    overflow: "hidden",
   },
-
-  /* SEARCH */
 
   searchContainer: {
     position: "absolute",
-
     top: 60,
     left: 16,
     right: 16,
-
     flexDirection: "row",
     alignItems: "center",
-
     zIndex: 100,
   },
 
   circleButton: {
     width: 56,
     height: 56,
-
     borderRadius: 28,
-
-    backgroundColor: "#FFF",
-
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
-
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
-
     shadowOffset: {
       width: 0,
       height: 4,
     },
-
     elevation: 4,
   },
 
   searchBar: {
     flex: 1,
-
     height: 56,
-
     marginHorizontal: 12,
-
     borderRadius: 28,
-
-    backgroundColor: "#FFF",
-
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
-
     paddingHorizontal: 18,
-
     justifyContent: "space-between",
-
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
-
     shadowOffset: {
       width: 0,
       height: 4,
     },
-
     elevation: 4,
   },
 
   searchLeft: {
     flexDirection: "row",
     alignItems: "center",
-
     flex: 1,
   },
 
   searchText: {
     marginLeft: 10,
-
     fontSize: 16,
-
     color: "#7A7A7A",
-
     fontWeight: "500",
   },
 
   divider: {
     width: 1,
     height: 24,
-
     backgroundColor: "#ECECEC",
-
     marginHorizontal: 14,
   },
 
-  /* CATEGORIES */
-
   categories: {
     position: "absolute",
-
     top: 128,
-
     left: 0,
     right: 0,
   },
 
-  /* RECENTER */
-
   recenterButton: {
     position: "absolute",
-
     right: 22,
     bottom: 178,
-
     width: 54,
     height: 54,
-
     borderRadius: 27,
-
     justifyContent: "center",
     alignItems: "center",
-
     backgroundColor: "rgba(255,248,246,0.92)",
-
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.6)",
-
     shadowColor: "#B88A8A",
-
     shadowOffset: {
       width: 0,
       height: 8,
     },
-
     shadowOpacity: 0.12,
     shadowRadius: 18,
-
     elevation: 10,
   },
 });

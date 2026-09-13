@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import CommentModal from "./CommentModal";
 
 import type { ExplorePost } from "../data/repositories/PostRepository";
 
@@ -185,6 +186,8 @@ function PostModal({ post, onClose }: Props) {
     });
   };
 
+  const [showComments, setShowComments] = useState(false);
+
   return (
     <View style={styles.overlay}>
       {/* =================================
@@ -196,7 +199,7 @@ function PostModal({ post, onClose }: Props) {
         onPress={handleClose}
         accessibilityRole="button"
         accessibilityLabel="Close post">
-        <BlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={85} tint="dark" style={StyleSheet.absoluteFill} />
 
         <View style={styles.backdropDim} />
       </Pressable>
@@ -276,6 +279,7 @@ function PostModal({ post, onClose }: Props) {
 
               <Pressable
                 style={styles.actionButton}
+                onPress={() => setShowComments(true)}
                 accessibilityRole="button"
                 accessibilityLabel="Comments">
                 <Ionicons name="chatbubble-outline" size={21} color="#FFFFFF" />
@@ -302,6 +306,12 @@ function PostModal({ post, onClose }: Props) {
           )}
         </View>
       </Animated.View>
+
+      <CommentModal
+        visible={showComments}
+        postId={post.id}
+        onClose={() => setShowComments(false)}
+      />
 
       {/* =================================
           CAPTION MODAL
@@ -368,7 +378,7 @@ const styles = StyleSheet.create({
   backdropDim: {
     ...StyleSheet.absoluteFillObject,
 
-    backgroundColor: "rgba(0, 0, 0, 0.42)",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 
   /* ================================
@@ -579,8 +589,7 @@ const styles = StyleSheet.create({
 
   captionDim: {
     ...StyleSheet.absoluteFillObject,
-
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 
   /* ================================

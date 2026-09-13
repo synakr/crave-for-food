@@ -1,26 +1,23 @@
-import { View, Text, StyleSheet, FlatList, Image } from "react-native";
+import { FlatList, Image, StyleSheet, Text, View } from "react-native";
 
 const SAVED = [
   {
     id: "1",
     title: "Spicy Chicken Momos",
     location: "Matabari",
-    image:
-      "https://images.unsplash.com/photo-1525755662778-989d0524087e",
+    image: "https://images.unsplash.com/photo-1525755662778-989d0524087e",
   },
   {
     id: "2",
     title: "Cheese Burger",
     location: "Udaipur",
-    image:
-      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd",
   },
   {
     id: "3",
     title: "Cold Coffee",
     location: "Melaghar",
-    image:
-      "https://images.unsplash.com/photo-1461023058943-07fcbe16d735",
+    image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735",
   },
 ];
 
@@ -33,16 +30,15 @@ export default function SavedScreen() {
         data={SAVED}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Image
-              source={{ uri: item.image }}
-              style={styles.image}
-            />
+            <Image source={{ uri: item.image }} style={styles.image} />
 
-            <View style={{ flex: 1 }}>
-              <Text style={styles.food}>{item.title}</Text>
+            <View style={styles.info}>
+              <Text style={styles.food} numberOfLines={1}>
+                {item.title}
+              </Text>
               <Text style={styles.location}>{item.location}</Text>
             </View>
           </View>
@@ -55,41 +51,53 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAF8F6",
+    backgroundColor: "#090C12",
     paddingTop: 70,
     paddingHorizontal: 20,
   },
 
   title: {
+    color: "#fff",
     fontSize: 32,
     fontWeight: "700",
-    marginBottom: 20,
+    marginBottom: 18,
+  },
+
+  list: {
+    paddingBottom: 120,
+    gap: 12,
   },
 
   card: {
+    height: 90,
     flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    marginBottom: 16,
+    alignItems: "center",
+    backgroundColor: "#151922",
+    borderRadius: 16,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#20252E",
   },
 
   image: {
-    width: 100,
-    height: 100,
+    width: 90,
+    height: 90,
+  },
+
+  info: {
+    flex: 1,
+    paddingHorizontal: 14,
   },
 
   food: {
-    fontSize: 17,
+    color: "#F1F2F5",
+    fontSize: 16,
     fontWeight: "700",
-    marginTop: 18,
-    marginHorizontal: 16,
   },
 
   location: {
-    fontSize: 14,
-    color: "#888",
-    marginTop: 6,
-    marginHorizontal: 16,
+    color: "#8D94A3",
+    fontSize: 13,
+    marginTop: 5,
   },
 });

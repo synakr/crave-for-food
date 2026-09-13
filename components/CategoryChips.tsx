@@ -1,5 +1,5 @@
-import { ScrollView, Pressable, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 
 const CATEGORIES = [
   {
@@ -34,31 +34,21 @@ export default function CategoryChips() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
+      contentContainerStyle={styles.container}>
       {CATEGORIES.map((item, index) => {
         const active = index === 0;
 
         return (
           <Pressable
             key={item.id}
-            style={[
-              styles.chip,
-              active && styles.activeChip,
-            ]}
-          >
+            style={[styles.chip, active && styles.activeChip]}>
             <Ionicons
               name={item.icon as any}
               size={20}
               color={active ? "#F06B6B" : "#8B7777"}
             />
 
-            <Text
-              style={[
-                styles.text,
-                active && styles.activeText,
-              ]}
-            >
+            <Text style={[styles.text, active && styles.activeText]}>
               {item.label}
             </Text>
           </Pressable>
@@ -110,7 +100,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#8B7777",
   },
-
   activeText: {
     color: "#F06B6B",
   },
