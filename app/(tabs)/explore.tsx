@@ -14,7 +14,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
 import CategoryChips from "@/components/CategoryChips";
 import FoodPostModal from "@/components/PostModal";
-import mapStyle from "@/constants/mapStyle";
+import mapStyleRedesign from "@/constants/mapStyleRedesign";
 import { seedMockDatabase } from "@/data/mock/seed";
 import { postRepository } from "@/data/repositories";
 import type { ExplorePost } from "@/data/repositories/PostRepository";
@@ -166,14 +166,16 @@ export default function HomeScreen() {
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
+        // buildingsEnabled={true}
         style={StyleSheet.absoluteFillObject}
         initialRegion={region}
-        customMapStyle={mapStyle}
         mapType="standard"
         showsUserLocation
         showsCompass={false}
         showsScale={false}
-        showsBuildings
+        customMapStyle={mapStyleRedesign}
+        showsBuildings={true}
+        // raisedBuildings={true}
         showsTraffic={false}
         showsIndoors={false}
         toolbarEnabled={false}

@@ -2,15 +2,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import React, { useEffect, useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
+import { getCurrentUserId } from "../constants/currentUser";
 
 import { db } from "../data/mock/db";
 import type { Comment } from "../data/models/Comment";
@@ -20,14 +22,18 @@ interface CommentModalProps {
   visible: boolean;
   postId: string;
   onClose: () => void;
+  onCommentAdded: () => void;
 }
 
 export default function CommentModal({
   visible,
   postId,
   onClose,
+  onCommentAdded,
 }: CommentModalProps) {
   const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
 
   useEffect(() => {
     if (!visible || !postId) return;
@@ -37,6 +43,47 @@ export default function CommentModal({
       .then(setComments)
       .catch(() => setComments([]));
   }, [visible, postId]);
+
+  const handleAddComment = async () => {
+    const content = commentText.trim();
+
+    if (!content) return;
+
+    const now = new Date().toISOString();
+
+    const newComment: Comment = {
+      id: `comment-${Date.now()}`,
+      post_id: postId,
+      user_id: getCurrentUserId(),
+      parent_comment_id: replyingTo?.id ?? null,
+      content,
+      created_at: now,
+      updated_at: now,
+    };
+
+    try {
+      const createdComment = await commentRepository.createComment(newComment);
+
+      setComments((previous) => [...previous, createdComment]);
+
+      onCommentAdded();
+
+      setCommentText("");
+      setReplyingTo(null);
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+    }
+  };
+
+  const handleReply = (comment: Comment) => {
+    setReplyingTo(comment);
+    setCommentText("");
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+    setCommentText("");
+  };
 
   const renderComment = (
     comment: Comment,
@@ -62,7 +109,7 @@ export default function CommentModal({
 
             <Text style={styles.commentText}>{comment.content}</Text>
 
-            <Pressable>
+            <Pressable onPress={() => handleReply(comment)} hitSlop={6}>
               <Text style={styles.reply}>Reply</Text>
             </Pressable>
           </View>
@@ -72,6 +119,10 @@ export default function CommentModal({
       </View>
     );
   };
+
+  const replyingToUser = replyingTo
+    ? db.users.find((user) => user.id === replyingTo.user_id)
+    : null;
 
   return (
     <Modal
@@ -100,7 +151,8 @@ export default function CommentModal({
           <ScrollView
             style={styles.comments}
             contentContainerStyle={styles.commentsContent}
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled">
             {comments
               .filter((comment) => !comment.parent_comment_id)
               .map((comment) => renderComment(comment))}
@@ -108,11 +160,46 @@ export default function CommentModal({
 
           {/* Input */}
           <View style={styles.inputContainer}>
-            <View style={styles.input}>
-              <Text style={styles.placeholder}>Add a comment...</Text>
+            <View style={styles.inputWrapper}>
+              {/* Cancel Reply */}
+              {replyingTo && (
+                <View style={styles.replyingBar}>
+                  <Text style={styles.replyingText}>
+                    Replying to @{replyingToUser?.username ?? "unknown"}
+                  </Text>
+
+                  <Pressable onPress={handleCancelReply} hitSlop={8}>
+                    <Ionicons
+                      name="close-circle"
+                      size={17}
+                      color="rgba(255,255,255,0.5)"
+                    />
+                  </Pressable>
+                </View>
+              )}
+
+              <TextInput
+                style={styles.input}
+                value={commentText}
+                onChangeText={setCommentText}
+                placeholder={
+                  replyingTo
+                    ? `Reply to @${replyingToUser?.username ?? "unknown"}...`
+                    : "Add a comment..."
+                }
+                placeholderTextColor="rgba(255,255,255,0.4)"
+                multiline
+                maxLength={500}
+              />
             </View>
 
-            <Pressable style={styles.sendButton}>
+            <Pressable
+              style={[
+                styles.sendButton,
+                !commentText.trim() && styles.sendButtonDisabled,
+              ]}
+              onPress={handleAddComment}
+              disabled={!commentText.trim()}>
               <Ionicons name="arrow-up" size={18} color="#fff" />
             </Pressable>
           </View>
@@ -230,7 +317,7 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     gap: 10,
     paddingHorizontal: 14,
     paddingTop: 10,
@@ -239,19 +326,37 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.08)",
   },
 
-  input: {
+  inputWrapper: {
     flex: 1,
+  },
+
+  replyingBar: {
+    height: 30,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+
+  replyingText: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+
+  input: {
     minHeight: 44,
+    maxHeight: 100,
     borderRadius: 22,
-    justifyContent: "center",
     paddingHorizontal: 16,
+    paddingVertical: 11,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
-  },
-
-  placeholder: {
-    color: "rgba(255,255,255,0.4)",
+    color: "#fff",
     fontSize: 14,
   },
 
@@ -262,5 +367,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.14)",
+  },
+
+  sendButtonDisabled: {
+    opacity: 0.4,
   },
 });

@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+
 import CommentModal from "./CommentModal";
 
 import type { ExplorePost } from "../data/repositories/PostRepository";
@@ -51,6 +52,9 @@ function formatTime(date: string) {
 
 function PostModal({ post, onClose }: Props) {
   const [showCaption, setShowCaption] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+
+  const [commentCount, setCommentCount] = useState(post.comment_count);
 
   /* ================================
      MAIN MODAL ANIMATION
@@ -160,8 +164,6 @@ function PostModal({ post, onClose }: Props) {
   ================================= */
 
   const handleClose = () => {
-    // If caption modal is open,
-    // only close the caption first.
     if (showCaption) {
       closeCaption();
       return;
@@ -185,8 +187,6 @@ function PostModal({ post, onClose }: Props) {
       }
     });
   };
-
-  const [showComments, setShowComments] = useState(false);
 
   return (
     <View style={styles.overlay}>
@@ -268,6 +268,8 @@ function PostModal({ post, onClose }: Props) {
             {/* ACTIONS */}
 
             <View style={styles.actions}>
+              {/* LIKE */}
+
               <Pressable
                 style={styles.actionButton}
                 accessibilityRole="button"
@@ -277,12 +279,16 @@ function PostModal({ post, onClose }: Props) {
                 <Text style={styles.actionCount}>{post.likes}</Text>
               </Pressable>
 
+              {/* COMMENTS */}
+
               <Pressable
                 style={styles.actionButton}
                 onPress={() => setShowComments(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Comments">
+                accessibilityLabel={`${commentCount} comments`}>
                 <Ionicons name="chatbubble-outline" size={21} color="#FFFFFF" />
+
+                <Text style={styles.actionCount}>{commentCount}</Text>
               </Pressable>
             </View>
           </View>
@@ -307,10 +313,15 @@ function PostModal({ post, onClose }: Props) {
         </View>
       </Animated.View>
 
+      {/* =================================
+          COMMENTS MODAL
+      ================================== */}
+
       <CommentModal
         visible={showComments}
         postId={post.id}
         onClose={() => setShowComments(false)}
+        onCommentAdded={() => setCommentCount((count) => count + 1)}
       />
 
       {/* =================================
@@ -368,16 +379,13 @@ const styles = StyleSheet.create({
 
   overlay: {
     ...StyleSheet.absoluteFillObject,
-
     justifyContent: "center",
     alignItems: "center",
-
     zIndex: 1000,
   },
 
   backdropDim: {
     ...StyleSheet.absoluteFillObject,
-
     backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 
@@ -388,11 +396,8 @@ const styles = StyleSheet.create({
   card: {
     width: "92%",
     maxWidth: 440,
-
     backgroundColor: "#171414",
-
     borderRadius: 24,
-
     overflow: "hidden",
 
     shadowColor: "#000",
@@ -414,9 +419,7 @@ const styles = StyleSheet.create({
 
   topSection: {
     flexDirection: "row",
-
     alignItems: "center",
-
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -424,33 +427,25 @@ const styles = StyleSheet.create({
   avatar: {
     width: 36,
     height: 36,
-
     borderRadius: 18,
-
     marginRight: 10,
-
     backgroundColor: "#292424",
   },
 
   userInfo: {
     flex: 1,
-
     minWidth: 0,
   },
 
   username: {
     fontSize: 14,
-
     fontWeight: "700",
-
     color: "#FFFFFF",
   },
 
   time: {
     marginTop: 2,
-
     fontSize: 11,
-
     color: "#9C8E8E",
   },
 
@@ -460,9 +455,7 @@ const styles = StyleSheet.create({
 
   image: {
     width: "100%",
-
     height: 360,
-
     backgroundColor: "#242020",
   },
 
@@ -472,51 +465,38 @@ const styles = StyleSheet.create({
 
   infoSection: {
     paddingHorizontal: 16,
-
     paddingTop: 14,
-
     paddingBottom: 16,
   },
 
   infoHeader: {
     flexDirection: "row",
-
     alignItems: "center",
   },
 
   titleContainer: {
     flex: 1,
-
     minWidth: 0,
-
     paddingRight: 12,
   },
 
   title: {
     fontSize: 19,
-
     lineHeight: 23,
-
     fontWeight: "700",
-
     color: "#FFFFFF",
   },
 
   locationRow: {
     flexDirection: "row",
-
     alignItems: "center",
-
     marginTop: 5,
   },
 
   location: {
     flex: 1,
-
     marginLeft: 4,
-
     fontSize: 12,
-
     color: "#A99A9A",
   },
 
@@ -526,25 +506,19 @@ const styles = StyleSheet.create({
 
   actions: {
     flexDirection: "row",
-
     alignItems: "center",
-
     gap: 14,
   },
 
   actionButton: {
     flexDirection: "row",
-
     alignItems: "center",
-
     gap: 4,
   },
 
   actionCount: {
     fontSize: 12,
-
     fontWeight: "600",
-
     color: "#FFFFFF",
   },
 
@@ -558,19 +532,14 @@ const styles = StyleSheet.create({
 
   caption: {
     fontSize: 13,
-
     lineHeight: 19,
-
     color: "#C8BBBB",
   },
 
   more: {
     marginTop: 3,
-
     fontSize: 13,
-
     fontWeight: "600",
-
     color: "#FFFFFF",
   },
 
@@ -580,10 +549,8 @@ const styles = StyleSheet.create({
 
   captionOverlay: {
     ...StyleSheet.absoluteFillObject,
-
     justifyContent: "center",
     alignItems: "center",
-
     zIndex: 20,
   },
 
@@ -598,15 +565,10 @@ const styles = StyleSheet.create({
 
   captionModal: {
     width: "88%",
-
     maxWidth: 420,
-
     maxHeight: "70%",
-
     padding: 20,
-
     borderRadius: 22,
-
     backgroundColor: "#211D1D",
 
     shadowColor: "#000",
@@ -624,21 +586,15 @@ const styles = StyleSheet.create({
 
   captionLabel: {
     fontSize: 11,
-
     fontWeight: "700",
-
     letterSpacing: 1.2,
-
     color: "#8F8080",
-
     marginBottom: 12,
   },
 
   captionFull: {
     fontSize: 15,
-
     lineHeight: 23,
-
     color: "#F5EEEE",
   },
 });

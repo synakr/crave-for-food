@@ -10,10 +10,11 @@ import {
   View,
 } from "react-native";
 
+import { getCurrentUserId } from "../../constants/currentUser";
+import { db } from "../../data/mock/db";
+
 const { width } = Dimensions.get("window");
 const GRID_SIZE = width / 3;
-
-const PROFILE_IMAGE = "https://i.pravatar.cc/300?img=12";
 
 const POSTS = [
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80",
@@ -43,6 +44,23 @@ const STORIES = [
 const VIEWS = ["3,095", "1,832", "1,628", "982", "764", "621", "513", "402"];
 
 export default function ProfileScreen() {
+  const currentUser = db.users.find((user) => user.id === getCurrentUserId());
+
+  const userPosts = db.posts.filter(
+    (post) => post.author_id === getCurrentUserId(),
+  );
+
+  const followersCount = db.follows.filter(
+    (follow) => follow.following_id === getCurrentUserId(),
+  ).length;
+
+  const followingCount = db.follows.filter(
+    (follow) => follow.follower_id === getCurrentUserId(),
+  ).length;
+
+  const profileImage =
+    currentUser?.avatar_url ?? "https://i.pravatar.cc/300?img=12";
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -51,7 +69,9 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable style={styles.username}>
-            <Text style={styles.usernameText}>mr.kun.__</Text>
+            <Text style={styles.usernameText}>
+              {currentUser?.username ?? "unknown"}
+            </Text>
             <Ionicons name="chevron-down" size={18} color="#fff" />
           </Pressable>
 
@@ -63,31 +83,44 @@ export default function ProfileScreen() {
         {/* Profile */}
         <View style={styles.profile}>
           <View>
-            <Image source={{ uri: PROFILE_IMAGE }} style={styles.avatar} />
+            <Image source={{ uri: profileImage }} style={styles.avatar} />
+
             <Pressable style={styles.addAvatar}>
               <Ionicons name="add" size={19} color="#111318" />
             </Pressable>
           </View>
 
           <View style={styles.stats}>
-            {[
-              ["8", "posts"],
-              ["78", "followers"],
-              ["63", "following"],
-            ].map(([number, label]) => (
-              <View style={styles.stat} key={label}>
-                <Text style={styles.statNumber}>{number}</Text>
-                <Text style={styles.statLabel}>{label}</Text>
-              </View>
-            ))}
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>{userPosts.length}</Text>
+              <Text style={styles.statLabel}>posts</Text>
+            </View>
+
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>{followersCount}</Text>
+              <Text style={styles.statLabel}>followers</Text>
+            </View>
+
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>{followingCount}</Text>
+              <Text style={styles.statLabel}>following</Text>
+            </View>
           </View>
         </View>
 
         {/* Bio */}
         <View style={styles.bio}>
-          <Text style={styles.name}>Sayan 🌿</Text>
-          <Text style={styles.bioText}>NIT CSE’27 💻🐙</Text>
-          <Text style={styles.bioText}>Cuts and chaos, in sync 🎥✨</Text>
+          <Text style={styles.name}>{currentUser?.name ?? "Unknown User"}</Text>
+
+          {currentUser?.bio ? (
+            <Text style={styles.bioText}>{currentUser.bio}</Text>
+          ) : (
+            <>
+              <Text style={styles.bioText}>NIT CSE’27 💻🐙</Text>
+
+              <Text style={styles.bioText}>Cuts and chaos, in sync 🎥✨</Text>
+            </>
+          )}
         </View>
 
         {/* Stories */}
@@ -139,6 +172,7 @@ export default function ProfileScreen() {
                   size={15}
                   color="#fff"
                 />
+
                 <Text style={styles.views}>{VIEWS[index]}</Text>
               </View>
 
