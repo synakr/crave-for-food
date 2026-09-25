@@ -10,10 +10,15 @@ import {
   Text,
   View,
 } from "react-native";
+import { savedRepository } from "../data/repositories";
 
-import CommentModal from "./CommentModal";
+import { getCurrentUserId } from "../constants/currentUser";
+import { likeRepository } from "../data/repositories";
 
 import type { ExplorePost } from "../data/repositories/PostRepository";
+
+import CommentModal from "./CommentModal";
+import LikesModal from "./LikesModal";
 
 interface Props {
   post: ExplorePost;
@@ -21,12 +26,10 @@ interface Props {
 }
 
 const FALLBACK_AVATAR = "https://i.pravatar.cc/150?img=12";
-
 const MAX_CAPTION_LENGTH = 140;
 
 function formatTime(date: string) {
   const diff = Date.now() - new Date(date).getTime();
-
   const minutes = Math.floor(diff / 60000);
 
   if (minutes < 1) return "Just now";
@@ -53,31 +56,23 @@ function formatTime(date: string) {
 function PostModal({ post, onClose }: Props) {
   const [showCaption, setShowCaption] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showLikes, setShowLikes] = useState(false);
 
   const [commentCount, setCommentCount] = useState(post.comment_count);
 
-  /* ================================
-     MAIN MODAL ANIMATION
-  ================================= */
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likes);
+  const [isLikeUpdating, setIsLikeUpdating] = useState(false);
 
+  // Main modal animation
   const scale = useRef(new Animated.Value(0.94)).current;
-
   const opacity = useRef(new Animated.Value(0)).current;
 
-  /* ================================
-     CAPTION MODAL ANIMATION
-  ================================= */
-
+  // Caption modal animation
   const captionScale = useRef(new Animated.Value(0.94)).current;
-
   const captionOpacity = useRef(new Animated.Value(0)).current;
 
-  /* ================================
-     DATA
-  ================================= */
-
   const time = formatTime(post.created_at);
-
   const caption = post.description ?? "";
 
   const isLongCaption = caption.length > MAX_CAPTION_LENGTH;
@@ -86,10 +81,7 @@ function PostModal({ post, onClose }: Props) {
     ? `${caption.slice(0, MAX_CAPTION_LENGTH)}...`
     : caption;
 
-  /* ================================
-     OPEN MAIN MODAL
-  ================================= */
-
+  // Open main modal
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
@@ -98,7 +90,6 @@ function PostModal({ post, onClose }: Props) {
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-
       Animated.spring(scale, {
         toValue: 1,
         friction: 8,
@@ -108,9 +99,54 @@ function PostModal({ post, onClose }: Props) {
     ]).start();
   }, [opacity, scale]);
 
-  /* ================================
-     OPEN CAPTION MODAL
-  ================================= */
+  // Load current user's like state
+  useEffect(() => {
+    let active = true;
+
+    const loadLikeState = async () => {
+      const userId = getCurrentUserId();
+      const like = await likeRepository.getLike(post.id, userId);
+
+      if (!active) return;
+
+      setIsLiked(!!like);
+      setLikeCount(post.likes);
+    };
+
+    loadLikeState();
+
+    return () => {
+      active = false;
+    };
+  }, [post.id, post.likes]);
+
+  const handleLike = async () => {
+    if (isLikeUpdating) return;
+
+    const userId = getCurrentUserId();
+
+    try {
+      setIsLikeUpdating(true);
+
+      if (isLiked) {
+        await likeRepository.deleteLike(post.id, userId);
+
+        setIsLiked(false);
+        setLikeCount((count) => Math.max(0, count - 1));
+      } else {
+        await likeRepository.createLike({
+          post_id: post.id,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+        });
+
+        setIsLiked(true);
+        setLikeCount((count) => count + 1);
+      }
+    } finally {
+      setIsLikeUpdating(false);
+    }
+  };
 
   const openCaption = () => {
     setShowCaption(true);
@@ -125,7 +161,6 @@ function PostModal({ post, onClose }: Props) {
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-
       Animated.spring(captionScale, {
         toValue: 1,
         friction: 8,
@@ -135,10 +170,6 @@ function PostModal({ post, onClose }: Props) {
     ]).start();
   };
 
-  /* ================================
-     CLOSE CAPTION MODAL
-  ================================= */
-
   const closeCaption = () => {
     Animated.parallel([
       Animated.timing(captionOpacity, {
@@ -146,7 +177,6 @@ function PostModal({ post, onClose }: Props) {
         duration: 110,
         useNativeDriver: true,
       }),
-
       Animated.timing(captionScale, {
         toValue: 0.94,
         duration: 110,
@@ -158,10 +188,6 @@ function PostModal({ post, onClose }: Props) {
       }
     });
   };
-
-  /* ================================
-     CLOSE MAIN MODAL
-  ================================= */
 
   const handleClose = () => {
     if (showCaption) {
@@ -175,7 +201,6 @@ function PostModal({ post, onClose }: Props) {
         duration: 120,
         useNativeDriver: true,
       }),
-
       Animated.timing(scale, {
         toValue: 0.94,
         duration: 120,
@@ -188,12 +213,60 @@ function PostModal({ post, onClose }: Props) {
     });
   };
 
+  // Bookmark or saved code here-------
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaveUpdating, setIsSaveUpdating] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSavedState = async () => {
+      const saved = await savedRepository.getSavedPost(
+        post.id,
+        getCurrentUserId(),
+      );
+
+      if (active) {
+        setIsSaved(saved !== null);
+      }
+    };
+
+    loadSavedState();
+
+    return () => {
+      active = false;
+    };
+  }, [post.id]);
+
+  const handleSave = async () => {
+    if (isSaveUpdating) return;
+
+    const userId = getCurrentUserId();
+
+    try {
+      setIsSaveUpdating(true);
+
+      if (isSaved) {
+        await savedRepository.deleteSaved(post.id, userId);
+
+        setIsSaved(false);
+      } else {
+        await savedRepository.createSaved({
+          post_id: post.id,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+        });
+
+        setIsSaved(true);
+      }
+    } finally {
+      setIsSaveUpdating(false);
+    }
+  };
+
   return (
     <View style={styles.overlay}>
-      {/* =================================
-          MAIN BACKDROP
-      ================================== */}
-
+      {/* Main backdrop */}
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={handleClose}
@@ -204,10 +277,7 @@ function PostModal({ post, onClose }: Props) {
         <View style={styles.backdropDim} />
       </Pressable>
 
-      {/* =================================
-          MAIN POST MODAL
-      ================================== */}
-
+      {/* Post card */}
       <Animated.View
         style={[
           styles.card,
@@ -216,8 +286,7 @@ function PostModal({ post, onClose }: Props) {
             transform: [{ scale }],
           },
         ]}>
-        {/* USER */}
-
+        {/* User */}
         <View style={styles.topSection}>
           <Image
             source={{
@@ -235,22 +304,16 @@ function PostModal({ post, onClose }: Props) {
           </View>
         </View>
 
-        {/* IMAGE */}
-
+        {/* Image */}
         <Image
-          source={{
-            uri: post.image,
-          }}
+          source={{ uri: post.image }}
           style={styles.image}
           resizeMode="cover"
         />
 
-        {/* POST INFORMATION */}
-
+        {/* Post information */}
         <View style={styles.infoSection}>
           <View style={styles.infoHeader}>
-            {/* TITLE + LOCATION */}
-
             <View style={styles.titleContainer}>
               <Text style={styles.title} numberOfLines={2}>
                 {post.title}
@@ -265,22 +328,34 @@ function PostModal({ post, onClose }: Props) {
               </View>
             </View>
 
-            {/* ACTIONS */}
-
+            {/* Actions */}
             <View style={styles.actions}>
-              {/* LIKE */}
+              {/* Like button */}
+              <View style={styles.likeAction}>
+                <Pressable
+                  style={styles.iconButton}
+                  onPress={handleLike}
+                  disabled={isLikeUpdating}
+                  accessibilityRole="button"
+                  accessibilityLabel={isLiked ? "Unlike post" : "Like post"}>
+                  <Ionicons
+                    name={isLiked ? "heart" : "heart-outline"}
+                    size={22}
+                    color={isLiked ? "#FF4D67" : "#FFFFFF"}
+                  />
+                </Pressable>
 
-              <Pressable
-                style={styles.actionButton}
-                accessibilityRole="button"
-                accessibilityLabel={`${post.likes} likes`}>
-                <Ionicons name="heart-outline" size={22} color="#FFFFFF" />
+                {/* Like count opens likes list */}
+                <Pressable
+                  onPress={() => setShowLikes(true)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${likeCount} likes`}>
+                  <Text style={styles.actionCount}>{likeCount}</Text>
+                </Pressable>
+              </View>
 
-                <Text style={styles.actionCount}>{post.likes}</Text>
-              </Pressable>
-
-              {/* COMMENTS */}
-
+              {/* Comments */}
               <Pressable
                 style={styles.actionButton}
                 onPress={() => setShowComments(true)}
@@ -290,11 +365,19 @@ function PostModal({ post, onClose }: Props) {
 
                 <Text style={styles.actionCount}>{commentCount}</Text>
               </Pressable>
+
+              {/* Saved Button */}
+              <Pressable onPress={handleSave}>
+                <Ionicons
+                  name={isSaved ? "bookmark" : "bookmark-outline"}
+                  size={22}
+                  color="#fff"
+                />
+              </Pressable>
             </View>
           </View>
 
-          {/* CAPTION */}
-
+          {/* Caption */}
           {!!caption && (
             <View style={styles.captionContainer}>
               <Text style={styles.caption}>{visibleCaption}</Text>
@@ -313,10 +396,14 @@ function PostModal({ post, onClose }: Props) {
         </View>
       </Animated.View>
 
-      {/* =================================
-          COMMENTS MODAL
-      ================================== */}
+      {/* Likes */}
+      <LikesModal
+        visible={showLikes}
+        postId={post.id}
+        onClose={() => setShowLikes(false)}
+      />
 
+      {/* Comments */}
       <CommentModal
         visible={showComments}
         postId={post.id}
@@ -324,14 +411,9 @@ function PostModal({ post, onClose }: Props) {
         onCommentAdded={() => setCommentCount((count) => count + 1)}
       />
 
-      {/* =================================
-          CAPTION MODAL
-      ================================== */}
-
+      {/* Full caption */}
       {showCaption && (
         <View style={styles.captionOverlay}>
-          {/* CAPTION BACKDROP */}
-
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={closeCaption}
@@ -346,18 +428,12 @@ function PostModal({ post, onClose }: Props) {
             <View style={styles.captionDim} />
           </Pressable>
 
-          {/* CAPTION CARD */}
-
           <Animated.View
             style={[
               styles.captionModal,
               {
                 opacity: captionOpacity,
-                transform: [
-                  {
-                    scale: captionScale,
-                  },
-                ],
+                transform: [{ scale: captionScale }],
               },
             ]}>
             <Text style={styles.captionLabel}>CAPTION</Text>
@@ -373,10 +449,6 @@ function PostModal({ post, onClose }: Props) {
 export default memo(PostModal);
 
 const styles = StyleSheet.create({
-  /* ================================
-     MAIN OVERLAY
-  ================================= */
-
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
@@ -389,10 +461,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 
-  /* ================================
-     MAIN CARD
-  ================================= */
-
   card: {
     width: "92%",
     maxWidth: 440,
@@ -401,21 +469,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
 
     shadowColor: "#000",
-
     shadowOffset: {
       width: 0,
       height: 12,
     },
-
     shadowOpacity: 0.35,
     shadowRadius: 28,
 
     elevation: 30,
   },
-
-  /* ================================
-     USER
-  ================================= */
 
   topSection: {
     flexDirection: "row",
@@ -449,19 +511,11 @@ const styles = StyleSheet.create({
     color: "#9C8E8E",
   },
 
-  /* ================================
-     IMAGE
-  ================================= */
-
   image: {
     width: "100%",
     height: 360,
     backgroundColor: "#242020",
   },
-
-  /* ================================
-     INFO
-  ================================= */
 
   infoSection: {
     paddingHorizontal: 16,
@@ -500,14 +554,21 @@ const styles = StyleSheet.create({
     color: "#A99A9A",
   },
 
-  /* ================================
-     ACTIONS
-  ================================= */
-
   actions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
+  },
+
+  likeAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  iconButton: {
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   actionButton: {
@@ -521,10 +582,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
   },
-
-  /* ================================
-     CAPTION
-  ================================= */
 
   captionContainer: {
     marginTop: 13,
@@ -543,10 +600,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
-  /* ================================
-     CAPTION OVERLAY
-  ================================= */
-
   captionOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
@@ -559,10 +612,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 
-  /* ================================
-     CAPTION MODAL
-  ================================= */
-
   captionModal: {
     width: "88%",
     maxWidth: 420,
@@ -572,12 +621,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#211D1D",
 
     shadowColor: "#000",
-
     shadowOffset: {
       width: 0,
       height: 10,
     },
-
     shadowOpacity: 0.4,
     shadowRadius: 24,
 

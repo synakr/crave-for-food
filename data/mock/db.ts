@@ -7,6 +7,7 @@ import { Mention } from "../models/Mention";
 import { Place } from "../models/Place";
 import { Post } from "../models/Post";
 import { PostContent } from "../models/PostContent";
+import type { Saved } from "../models/Saved";
 import { User } from "../models/User";
 import { UserLocation } from "../models/UserLocation";
 
@@ -22,6 +23,7 @@ export interface MockDatabase {
   mentions: Mention[];
   map_promotions: MapPromotion[];
   user_locations: UserLocation[];
+  saved: Saved[];
 }
 
 export const db: MockDatabase = {
@@ -36,4 +38,5 @@ export const db: MockDatabase = {
   mentions: [],
   map_promotions: [],
   user_locations: [],
+  saved: [],
 };
