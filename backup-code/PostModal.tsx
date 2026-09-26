@@ -10,10 +10,12 @@ import {
   Text,
   View,
 } from "react-native";
-import { savedRepository } from "../data/repositories";
-
 import { getCurrentUserId } from "../constants/currentUser";
-import { likeRepository } from "../data/repositories";
+import {
+  commentRepository,
+  likeRepository,
+  savedRepository,
+} from "../data/repositories";
 
 import type { ExplorePost } from "../data/repositories/PostRepository";
 
@@ -58,7 +60,7 @@ function PostModal({ post, onClose }: Props) {
   const [showComments, setShowComments] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
 
-  const [commentCount, setCommentCount] = useState(post.comment_count);
+  const [commentCount, setCommentCount] = useState(0);
 
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
@@ -80,6 +82,25 @@ function PostModal({ post, onClose }: Props) {
   const visibleCaption = isLongCaption
     ? `${caption.slice(0, MAX_CAPTION_LENGTH)}...`
     : caption;
+
+  // comment count
+  useEffect(() => {
+    let active = true;
+
+    const loadCommentCount = async () => {
+      const count = await commentRepository.getCommentCountByPostId(post.id);
+
+      if (active) {
+        setCommentCount(count);
+      }
+    };
+
+    loadCommentCount();
+
+    return () => {
+      active = false;
+    };
+  }, [post.id]);
 
   // Open main modal
   useEffect(() => {

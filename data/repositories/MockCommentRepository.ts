@@ -3,6 +3,10 @@ import { Comment } from "../models/Comment";
 import { CommentRepository } from "./CommentRepository";
 
 export class MockCommentRepository implements CommentRepository {
+  async getCommentCountByPostId(postId: string): Promise<number> {
+    return db.comments.filter((comment) => comment.post_id === postId).length;
+  }
+
   async getCommentsByPostId(postId: string): Promise<Comment[]> {
     return db.comments
       .filter((comment) => comment.post_id === postId)

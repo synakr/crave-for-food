@@ -1,12 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  Pressable,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
 
 import { getCurrentUserId } from "../../constants/currentUser";
@@ -25,50 +27,59 @@ export default function SavedScreen() {
 
       const userId = getCurrentUserId();
 
-      // Get only references to saved posts.
       const savedItems = await savedRepository.getSavedPosts(userId);
+      const allPosts = await postRepository.getExplorePosts();
 
-      // Resolve each reference to the actual post.
-      const savedPosts = await Promise.all(
-        savedItems.map(async (saved) => {
-          return postRepository
-            .getExplorePosts()
-            .then(
-              (allPosts) =>
-                allPosts.find((post) => post.id === saved.post_id) ?? null,
-            );
-        }),
-      );
+      const savedPosts = savedItems
+        .map(
+          (saved) => allPosts.find((post) => post.id === saved.post_id) ?? null,
+        )
+        .filter((post): post is SavedPost => post !== null);
 
-      setPosts(savedPosts.filter((post): post is SavedPost => post !== null));
+      setPosts(savedPosts);
     } catch (error) {
       console.error("Failed to load saved posts:", error);
-
       setPosts([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadSavedPosts();
-  }, [loadSavedPosts]);
+  useFocusEffect(
+    useCallback(() => {
+      loadSavedPosts();
+    }, [loadSavedPosts]),
+  );
 
   const renderPost = ({ item }: { item: SavedPost }) => {
     return (
-      <View style={styles.card}>
-        <Image source={{ uri: item.image }} style={styles.image} />
+      <Pressable style={styles.card}>
+        {/* Image */}
+        <Image
+          source={{ uri: item.image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
 
-        <View style={styles.info}>
+        {/* Bottom gradient-like overlay */}
+        <View style={styles.imageOverlay} />
+
+        {/* Saved badge */}
+        <View style={styles.savedBadge}>
+          <Ionicons name="bookmark" size={13} color="#FFFFFF" />
+        </View>
+
+        {/* Content */}
+        <View style={styles.cardContent}>
           <Text style={styles.title} numberOfLines={2}>
             {item.title}
           </Text>
 
           <View style={styles.locationRow}>
             <Ionicons
-              name="location-outline"
-              size={14}
-              color="rgba(255,255,255,0.55)"
+              name="location"
+              size={12}
+              color="rgba(255,255,255,0.72)"
             />
 
             <Text style={styles.location} numberOfLines={1}>
@@ -76,7 +87,7 @@ export default function SavedScreen() {
             </Text>
           </View>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
@@ -92,28 +103,37 @@ export default function SavedScreen() {
     return (
       <View style={styles.empty}>
         <View style={styles.emptyIcon}>
-          <Ionicons
-            name="bookmark-outline"
-            size={28}
-            color="rgba(255,255,255,0.65)"
-          />
+          <Ionicons name="bookmark" size={25} color="rgba(255,255,255,0.8)" />
         </View>
 
-        <Text style={styles.emptyTitle}>No saved posts</Text>
+        <Text style={styles.emptyTitle}>Your saved places</Text>
 
-        <Text style={styles.emptyText}>Posts you save will appear here.</Text>
+        <Text style={styles.emptyText}>
+          Save posts you want to revisit later.
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Saved</Text>
+        <View style={styles.headerLeft}>
+          <View style={styles.headerIcon}>
+            <Ionicons name="bookmark" size={17} color="#FFFFFF" />
+          </View>
 
-        <Text style={styles.count}>{posts.length}</Text>
+          <View>
+            <Text style={styles.headerTitle}>Saved</Text>
+            <Text style={styles.headerSubtitle}>
+              {posts.length} {posts.length === 1 ? "post" : "posts"}
+            </Text>
+          </View>
+        </View>
       </View>
 
+      {/* Grid */}
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -142,55 +162,90 @@ const styles = StyleSheet.create({
     backgroundColor: "#0F0D0D",
   },
 
+  /* ───────────────── Header ───────────────── */
+
   header: {
-    height: 64,
     paddingHorizontal: 18,
+    paddingTop: 70,
+    paddingBottom: 14,
+  },
+
+  headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.07)",
+  },
+
+  headerIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 11,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
 
   headerTitle: {
     color: "#FFFFFF",
     fontSize: 20,
+    lineHeight: 23,
     fontWeight: "700",
+    letterSpacing: -0.3,
   },
 
-  count: {
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 13,
-    fontWeight: "600",
+  headerSubtitle: {
+    marginTop: 2,
+    color: "rgba(255,255,255,0.42)",
+    fontSize: 11,
+    fontWeight: "500",
   },
+
+  /* ───────────────── Grid ───────────────── */
 
   content: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingTop: 4,
     paddingBottom: 120,
   },
 
   row: {
-    gap: 10,
+    width: "100%",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
 
+  /* ───────────────── Card ───────────────── */
+
   card: {
-    flex: 1,
+    width: "48.5%",
+    aspectRatio: 1,
     overflow: "hidden",
-    borderRadius: 18,
+    borderRadius: 20,
     backgroundColor: "#191616",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
   },
 
   image: {
     width: "100%",
-    aspectRatio: 1,
+    height: "100%",
     backgroundColor: "#242020",
   },
 
-  info: {
-    padding: 11,
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.18)",
+  },
+
+  cardContent: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 12,
+    paddingTop: 34,
+    paddingBottom: 12,
+    backgroundColor: "rgba(0,0,0,0.42)",
   },
 
   title: {
@@ -198,51 +253,73 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     fontWeight: "700",
+    letterSpacing: -0.1,
   },
 
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 6,
-    gap: 3,
+    gap: 4,
   },
 
   location: {
     flex: 1,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.68)",
     fontSize: 11,
+    fontWeight: "500",
   },
+
+  savedBadge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(15,13,13,0.55)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+
+  /* ───────────────── Empty ───────────────── */
 
   empty: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: 45,
+    paddingBottom: 80,
     backgroundColor: "#0F0D0D",
   },
 
   emptyIcon: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 68,
+    height: 68,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    marginBottom: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
 
   emptyTitle: {
     color: "#FFFFFF",
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "700",
+    letterSpacing: -0.2,
   },
 
   emptyText: {
-    color: "rgba(255,255,255,0.45)",
+    maxWidth: 260,
+    marginTop: 7,
+    color: "rgba(255,255,255,0.42)",
     fontSize: 13,
-    marginTop: 6,
+    lineHeight: 19,
     textAlign: "center",
   },
 });
