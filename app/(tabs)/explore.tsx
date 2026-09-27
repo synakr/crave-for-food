@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -13,6 +13,7 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
 import CategoryChips from "@/components/CategoryChips";
+import MapPostFocus from "@/components/MapPostFocus";
 import FoodPostModal from "@/components/PostModal";
 import mapStyleRedesign from "@/constants/mapStyleRedesign";
 import { seedMockDatabase } from "@/data/mock/seed";
@@ -29,12 +30,51 @@ interface MapRegion {
 export default function HomeScreen() {
   const [region, setRegion] = useState<MapRegion | null>(null);
   const [selectedPost, setSelectedPost] = useState<ExplorePost | null>(null);
+
+  // Focused post for long-press interaction
+  const [focusedPost, setFocusedPost] = useState<ExplorePost | null>(null);
+
+  // Screen position where the focus animation should originate
+  const [focusOrigin, setFocusOrigin] = useState({
+    x: 0,
+    y: 0,
+  });
+
   const [posts, setPosts] = useState<ExplorePost[]>([]);
   const [mapReady, setMapReady] = useState(false);
 
   const [loadedMarkers, setLoadedMarkers] = useState<Set<string>>(new Set());
 
   const mapRef = useRef<MapView>(null);
+
+  const getPostIndexById = useCallback(
+    (postId: string) => posts.findIndex((post) => post.id === postId),
+    [posts],
+  );
+
+  const focusedIndex = useMemo(() => {
+    if (!focusedPost) {
+      return -1;
+    }
+
+    return getPostIndexById(focusedPost.id);
+  }, [focusedPost, getPostIndexById]);
+
+  const navigateFocusedPost = useCallback(
+    (direction: "previous" | "next") => {
+      if (!focusedPost || focusedIndex < 0) {
+        return;
+      }
+
+      const nextIndex =
+        direction === "next" ? focusedIndex + 1 : focusedIndex - 1;
+
+      if (nextIndex >= 0 && nextIndex < posts.length) {
+        setFocusedPost(posts[nextIndex]);
+      }
+    },
+    [focusedIndex, focusedPost, posts],
+  );
 
   /* LOAD POSTS */
 
@@ -124,6 +164,11 @@ export default function HomeScreen() {
     }, delay);
   }, []);
 
+  const handleMarkerPress = useCallback((post: ExplorePost) => {
+    Image.prefetch(post.image);
+    setSelectedPost(post);
+  }, []);
+
   /* RECENTER */
 
   const recenterMap = useCallback(async () => {
@@ -149,6 +194,60 @@ export default function HomeScreen() {
     }
   }, [mapReady]);
 
+  /* LONG PRESS */
+
+  const handleMapLongPress = useCallback(
+    async (latitude: number, longitude: number) => {
+      // Approximate geographic radius around a marker.
+      // The Marker component itself remains untouched.
+      const MARKER_RADIUS = 0.0008;
+
+      const nearbyPost = posts.find((post) => {
+        const latitudeDifference = Math.abs(post.latitude - latitude);
+
+        const longitudeDifference = Math.abs(post.longitude - longitude);
+
+        return (
+          latitudeDifference < MARKER_RADIUS &&
+          longitudeDifference < MARKER_RADIUS
+        );
+      });
+
+      if (!nearbyPost || !mapRef.current) {
+        return;
+      }
+
+      try {
+        /*
+         * Convert the selected post's geographic coordinate
+         * into its actual screen position.
+         */
+        const point = await mapRef.current.pointForCoordinate({
+          latitude: nearbyPost.latitude,
+          longitude: nearbyPost.longitude,
+        });
+
+        setFocusOrigin({
+          x: point.x,
+          y: point.y,
+        });
+
+        setFocusedPost(nearbyPost);
+      } catch (error) {
+        console.log("Failed to calculate marker position:", error);
+
+        // Fallback: still open the focus UI.
+        setFocusOrigin({
+          x: 0,
+          y: 0,
+        });
+
+        setFocusedPost(nearbyPost);
+      }
+    },
+    [posts],
+  );
+
   /* LOADING */
 
   if (!region) {
@@ -166,7 +265,6 @@ export default function HomeScreen() {
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
-        // buildingsEnabled={true}
         style={StyleSheet.absoluteFillObject}
         initialRegion={region}
         mapType="standard"
@@ -175,7 +273,6 @@ export default function HomeScreen() {
         showsScale={false}
         customMapStyle={mapStyleRedesign}
         showsBuildings={true}
-        // raisedBuildings={true}
         showsTraffic={false}
         showsIndoors={false}
         toolbarEnabled={false}
@@ -184,6 +281,11 @@ export default function HomeScreen() {
         pitchEnabled
         showsMyLocationButton={false}
         onMapReady={() => setMapReady(true)}
+        onLongPress={(event) => {
+          const { latitude, longitude } = event.nativeEvent.coordinate;
+
+          handleMapLongPress(latitude, longitude);
+        }}
         loadingIndicatorColor="#C89B9B"
         loadingBackgroundColor="#F8F4F2">
         {posts.map((post) => (
@@ -198,10 +300,7 @@ export default function HomeScreen() {
               y: 1.25,
             }}
             tracksViewChanges={!loadedMarkers.has(post.id)}
-            onPress={() => {
-              Image.prefetch(post.image);
-              setSelectedPost(post);
-            }}>
+            onPress={() => handleMarkerPress(post)}>
             <Image
               source={{
                 uri: post.image,
@@ -265,6 +364,21 @@ export default function HomeScreen() {
           onClose={() => setSelectedPost(null)}
         />
       )}
+
+      {/* MAP POST FOCUS */}
+
+      {focusedPost && (
+        <MapPostFocus
+          post={focusedPost}
+          index={focusedIndex}
+          total={posts.length}
+          originX={focusOrigin.x}
+          originY={focusOrigin.y}
+          onPrevious={() => navigateFocusedPost("previous")}
+          onNext={() => navigateFocusedPost("next")}
+          onClose={() => setFocusedPost(null)}
+        />
+      )}
     </View>
   );
 }
@@ -308,6 +422,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
+
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -315,6 +430,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
+
     elevation: 4,
   },
 
@@ -328,6 +444,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 18,
     justifyContent: "space-between",
+
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -335,6 +452,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
+
     elevation: 4,
   },
 
@@ -377,6 +495,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,248,246,0.92)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.6)",
+
     shadowColor: "#B88A8A",
     shadowOffset: {
       width: 0,
@@ -384,6 +503,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.12,
     shadowRadius: 18,
+
     elevation: 10,
   },
 });

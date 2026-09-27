@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 const ACTIVITIES = [
   { id: 1, icon: "heart", text: "Riya liked your Momos post", time: "2m ago" },
@@ -30,6 +31,9 @@ export default function ActivityScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>Activity</Text>
+      <Pressable onPress={() => router.push("/create-post")}>
+        <Text style={styles.postIcon}>Create Post</Text>
+      </Pressable>
 
       {ACTIVITIES.map((item) => (
         <View key={item.id} style={styles.card}>
@@ -101,5 +105,8 @@ const styles = StyleSheet.create({
     color: "#8D94A3",
     fontSize: 13,
     marginTop: 4,
+  },
+  postIcon: {
+    color: "#F1F2F5",
   },
 });
