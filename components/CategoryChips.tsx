@@ -1,5 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { BlurView } from "expo-blur";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+} from "react-native";
 
 const CATEGORIES = [
   {
@@ -41,16 +48,25 @@ export default function CategoryChips() {
         return (
           <Pressable
             key={item.id}
-            style={[styles.chip, active && styles.activeChip]}>
-            <Ionicons
-              name={item.icon as any}
-              size={20}
-              color={active ? "#F06B6B" : "#8B7777"}
-            />
+            style={({ pressed }) => [
+              styles.chip,
+              active && styles.activeChip,
+              pressed && styles.pressed,
+            ]}>
+            <BlurView
+              intensity={Platform.OS === "ios" ? 50 : 35}
+              tint="light"
+              style={styles.blur}>
+              <Ionicons
+                name={item.icon as any}
+                size={19}
+                color={active ? "#111" : "rgba(17,17,17,0.55)"}
+              />
 
-            <Text style={[styles.text, active && styles.activeText]}>
-              {item.label}
-            </Text>
+              <Text style={[styles.text, active && styles.activeText]}>
+                {item.label}
+              </Text>
+            </BlurView>
           </Pressable>
         );
       })}
@@ -65,42 +81,61 @@ const styles = StyleSheet.create({
   },
 
   chip: {
-    flexDirection: "row",
-    alignItems: "center",
+    height: 42,
+    minWidth: 92,
+    borderRadius: 21,
+    overflow: "hidden",
 
-    height: 40,
-    paddingHorizontal: 14,
+    backgroundColor: "rgba(255,255,255,0.72)",
 
-    borderRadius: 20,
-
-    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: "rgb(10, 10, 10)",
 
     marginRight: 8,
 
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
+    ...(Platform.OS === "android"
+      ? {
+          elevation: 2,
+        }
+      : {
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: 0.08,
+          shadowRadius: 5,
+        }),
+  },
 
-    elevation: 3,
+  blur: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+
+    paddingHorizontal: 14,
+
+    backgroundColor: "rgba(255,255,255,0.45)",
   },
 
   activeChip: {
-    backgroundColor: "#FFF5F5",
-    borderWidth: 1,
-    borderColor: "#FFD6D6",
+    borderColor: "rgb(10, 10, 10)",
+    backgroundColor: "rgba(10, 10, 10, 0.06)",
   },
 
   text: {
     marginLeft: 6,
     fontSize: 14,
     fontWeight: "600",
-    color: "#8B7777",
+    color: "rgba(17,17,17,0.5)",
   },
+
   activeText: {
-    color: "#F06B6B",
+    color: "#111",
+  },
+
+  pressed: {
+    transform: [{ scale: 0.94 }],
   },
 });

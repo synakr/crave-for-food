@@ -18,11 +18,20 @@ import {
 } from "react-native";
 
 import { ExplorePost } from "../data/repositories/PostRepository";
+import FocusedMiniMap from "./FocusedMiniMap";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
+const FRAME_INSET = "4%";
+const FRAME_TOP = "6%";
+const FRAME_BOTTOM = "6%";
+const MAP_HEIGHT = "26%";
+const CARD_TOP = "29%";
+const CARD_BOTTOM = "8%";
+
 interface MapPostFocusProps {
   post: ExplorePost;
+  posts: ExplorePost[];
   index: number;
   total: number;
 
@@ -36,6 +45,7 @@ interface MapPostFocusProps {
 
 export default function MapPostFocus({
   post,
+  posts,
   index,
   total,
   originX,
@@ -401,56 +411,7 @@ export default function MapPostFocus({
           )}
 
           {/* Fake map */}
-
-          <Animated.View
-            style={[
-              styles.fakeMap,
-              {
-                opacity: mapLoading ? 0 : 1,
-              },
-            ]}>
-            {/* Roads */}
-
-            <View style={[styles.fakeRoad, styles.roadOne]} />
-
-            <View style={[styles.fakeRoad, styles.roadTwo]} />
-
-            <View style={[styles.fakeRoad, styles.roadThree]} />
-
-            <View style={[styles.fakeRoad, styles.roadFour]} />
-
-            {/* Map blocks */}
-
-            <View style={styles.mapBlockOne} />
-            <View style={styles.mapBlockTwo} />
-            <View style={styles.mapBlockThree} />
-            <View style={styles.mapBlockFour} />
-
-            {/* Other markers */}
-
-            <View style={styles.smallMarkerOne} />
-            <View style={styles.smallMarkerTwo} />
-            <View style={styles.smallMarkerThree} />
-
-            {/* Selected marker */}
-
-            <View style={styles.selectedMarkerWrapper}>
-              <View style={styles.selectedMarkerPulse} />
-
-              <Image
-                source={{ uri: post.image }}
-                style={styles.selectedMarkerImage}
-              />
-            </View>
-
-            {/* Location label */}
-
-            <View style={styles.mapLabel}>
-              <Text numberOfLines={1} style={styles.mapLabelText}>
-                {post.location}
-              </Text>
-            </View>
-          </Animated.View>
+          <FocusedMiniMap post={post} posts={posts} />
         </View>
 
         {/* ===================================================
@@ -608,30 +569,6 @@ export default function MapPostFocus({
       <Pressable onPress={onClose} style={styles.closeButton} hitSlop={12}>
         <Text style={styles.closeText}>×</Text>
       </Pressable>
-
-      {/* =====================================================
-          PREVIOUS
-         ===================================================== */}
-
-      {/* {index > 0 && (
-        <Pressable
-          onPress={onPrevious}
-          style={[styles.navigationButton, styles.previousButton]}>
-          <Text style={styles.navigationText}>‹</Text>
-        </Pressable>
-      )} */}
-
-      {/* =====================================================
-          NEXT
-         ===================================================== */}
-
-      {/* {index < total - 1 && (
-        <Pressable
-          onPress={onNext}
-          style={[styles.navigationButton, styles.nextButton]}>
-          <Text style={styles.navigationText}>›</Text>
-        </Pressable>
-      )} */}
     </Animated.View>
   );
 }
@@ -649,7 +586,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     inset: 0,
     zIndex: 100,
-    backgroundColor: "rgba(0, 0, 0, 0.58)",
+    backgroundColor: "rgba(20, 16, 14, 0.68)",
   },
 
   /* =========================================================
@@ -658,19 +595,12 @@ const styles = StyleSheet.create({
 
   focusContainer: {
     position: "absolute",
-
-    width: "94%",
-    height: "91%",
-
-    left: "3%",
-    top: "4.5%",
-
-    backgroundColor: "transparent",
-
-    borderRadius: 22,
-
-    padding: 0,
-
+    left: FRAME_INSET,
+    right: FRAME_INSET,
+    top: FRAME_TOP,
+    bottom: FRAME_BOTTOM,
+    borderRadius: 24,
+    backgroundColor: "#27211D",
     overflow: "hidden",
   },
 
@@ -680,19 +610,15 @@ const styles = StyleSheet.create({
 
   miniMapContainer: {
     width: "100%",
-    height: "25%",
-
-    borderRadius: 17,
-
+    height: MAP_HEIGHT,
+    borderRadius: 20,
     overflow: "hidden",
-
-    backgroundColor: "#E8E5E1",
+    backgroundColor: "#DED8D0",
   },
 
   fakeMap: {
     ...StyleSheet.absoluteFillObject,
-
-    backgroundColor: "#E8E5E1",
+    backgroundColor: "#DED8D0",
   },
 
   /* =========================================================
@@ -701,8 +627,7 @@ const styles = StyleSheet.create({
 
   mapSkeleton: {
     ...StyleSheet.absoluteFillObject,
-
-    backgroundColor: "#E1DED9",
+    backgroundColor: "#D3CCC3",
   },
 
   skeletonRoadLarge: {
@@ -711,7 +636,7 @@ const styles = StyleSheet.create({
     width: "150%",
     height: 18,
 
-    backgroundColor: "#D5D1CC",
+    backgroundColor: "#C7BFB5",
 
     transform: [
       {
@@ -729,7 +654,7 @@ const styles = StyleSheet.create({
     width: "120%",
     height: 12,
 
-    backgroundColor: "#D5D1CC",
+    backgroundColor: "#C7BFB5",
 
     transform: [
       {
@@ -749,7 +674,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#DAD6D1",
+    backgroundColor: "#CBC3B9",
 
     left: 20,
     top: 18,
@@ -763,7 +688,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#DAD6D1",
+    backgroundColor: "#CBC3B9",
 
     right: 20,
     top: 25,
@@ -777,7 +702,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#DAD6D1",
+    backgroundColor: "#CBC3B9",
 
     left: "40%",
     bottom: 15,
@@ -790,7 +715,7 @@ const styles = StyleSheet.create({
   fakeRoad: {
     position: "absolute",
 
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F7F3EE",
 
     borderRadius: 20,
   },
@@ -863,7 +788,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#D9D5CF",
+    backgroundColor: "#CFC6BC",
 
     left: 20,
     top: 20,
@@ -877,7 +802,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#D9D5CF",
+    backgroundColor: "#CFC6BC",
 
     right: 25,
     top: 30,
@@ -891,7 +816,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#D9D5CF",
+    backgroundColor: "#CFC6BC",
 
     left: 50,
     bottom: 15,
@@ -905,7 +830,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#D9D5CF",
+    backgroundColor: "#CFC6BC",
 
     right: 40,
     bottom: 20,
@@ -923,7 +848,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 5,
 
-    backgroundColor: "#7D7771",
+    backgroundColor: "#9B8173",
 
     left: "24%",
     top: "35%",
@@ -937,7 +862,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 5,
 
-    backgroundColor: "#7D7771",
+    backgroundColor: "#9B8173",
 
     right: "25%",
     top: "58%",
@@ -951,7 +876,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 4,
 
-    backgroundColor: "#7D7771",
+    backgroundColor: "#9B8173",
 
     left: "68%",
     top: "25%",
@@ -981,7 +906,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 22,
 
-    backgroundColor: "rgba(0, 0, 0, 0.12)",
+    backgroundColor: "rgba(226, 107, 93, 0.22)",
   },
 
   selectedMarkerImage: {
@@ -998,22 +923,19 @@ const styles = StyleSheet.create({
     position: "absolute",
 
     left: 12,
-    bottom: 10,
+    bottom: 12,
 
     maxWidth: "70%",
 
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-
-    borderRadius: 10,
-
-    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.94)",
   },
 
   mapLabelText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "600",
-
     color: "#393532",
   },
 
@@ -1023,11 +945,8 @@ const styles = StyleSheet.create({
 
   postSlot: {
     flex: 1,
-
-    marginTop: 0,
-
-    borderRadius: 18,
-
+    marginTop: 12,
+    borderRadius: 20,
     backgroundColor: "transparent",
   },
 
@@ -1037,28 +956,23 @@ const styles = StyleSheet.create({
 
   animatedPostLayer: {
     position: "absolute",
-
-    left: "3.7%",
-    right: "3.7%",
-
-    top: "28%",
-    bottom: "10%",
+    left: FRAME_INSET,
+    right: FRAME_INSET,
+    top: CARD_TOP,
+    bottom: CARD_BOTTOM,
   },
 
   postCard: {
     flex: 1,
-
-    borderRadius: 18,
-
+    borderRadius: 20,
     overflow: "hidden",
-
-    backgroundColor: "#151515",
-
-    elevation: 8,
-
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-
+    backgroundColor: "#171412",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    elevation: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 22,
     shadowOffset: {
       width: 0,
       height: 10,
@@ -1071,10 +985,8 @@ const styles = StyleSheet.create({
 
   imageContainer: {
     flex: 1,
-
     position: "relative",
-
-    backgroundColor: "#DDD9D5",
+    backgroundColor: "#302925",
   },
 
   postImage: {
@@ -1087,7 +999,7 @@ const styles = StyleSheet.create({
   imageSkeleton: {
     ...StyleSheet.absoluteFillObject,
 
-    backgroundColor: "#D8D4D0",
+    backgroundColor: "#403831",
 
     justifyContent: "flex-end",
 
@@ -1100,7 +1012,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#C8C3BE",
+    backgroundColor: "#62574E",
 
     marginBottom: 10,
   },
@@ -1111,7 +1023,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor: "#C8C3BE",
+    backgroundColor: "#62574E",
   },
 
   imageError: {
@@ -1120,7 +1032,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
 
-    backgroundColor: "#E2DEDA",
+    backgroundColor: "#302925",
   },
 
   imageErrorIcon: {
@@ -1132,7 +1044,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 34,
 
-    backgroundColor: "#B9B3AE",
+    backgroundColor: "#C85F53",
 
     color: "#FFFFFF",
 
@@ -1143,7 +1055,7 @@ const styles = StyleSheet.create({
   },
 
   imageErrorText: {
-    color: "#5B5652",
+    color: "#E9DED6",
 
     fontSize: 13,
     fontWeight: "600",
@@ -1152,7 +1064,7 @@ const styles = StyleSheet.create({
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
 
-    backgroundColor: "rgba(0,0,0,0.20)",
+    backgroundColor: "rgba(11,8,7,0.30)",
   },
 
   /* =========================================================
@@ -1162,8 +1074,8 @@ const styles = StyleSheet.create({
   userInfo: {
     position: "absolute",
 
-    left: 18,
-    top: 18,
+    left: 20,
+    top: 20,
 
     flexDirection: "row",
 
@@ -1188,7 +1100,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 20,
 
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F2E6DE",
 
     alignItems: "center",
     justifyContent: "center",
@@ -1225,16 +1137,16 @@ const styles = StyleSheet.create({
   postInfo: {
     position: "absolute",
 
-    left: 18,
-    right: 18,
-    bottom: 20,
+    left: 20,
+    right: 20,
+    bottom: 22,
   },
 
   postTitle: {
     color: "#FFFFFF",
 
-    fontSize: 25,
-    lineHeight: 30,
+    fontSize: 26,
+    lineHeight: 31,
 
     fontWeight: "800",
 
@@ -1253,7 +1165,7 @@ const styles = StyleSheet.create({
   likes: {
     color: "#FFFFFF",
 
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
   },
 
@@ -1264,15 +1176,14 @@ const styles = StyleSheet.create({
   counter: {
     position: "absolute",
 
-    right: 12,
-    top: 12,
-
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-
-    borderRadius: 10,
-
-    backgroundColor: "rgba(0,0,0,0.45)",
+    right: 14,
+    top: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: "rgba(24,18,15,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
   },
 
   counterText: {
@@ -1289,15 +1200,12 @@ const styles = StyleSheet.create({
   closeButton: {
     position: "absolute",
 
-    right: 18,
-    top: 45,
-
-    width: 42,
-    height: 42,
-
-    borderRadius: 21,
-
-    backgroundColor: "rgba(0,0,0,0.55)",
+    right: 20,
+    top: 26,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F4E9E1",
 
     alignItems: "center",
     justifyContent: "center",
@@ -1306,12 +1214,10 @@ const styles = StyleSheet.create({
   },
 
   closeText: {
-    color: "#FFFFFF",
-
-    fontSize: 30,
-    fontWeight: "300",
-
-    lineHeight: 32,
+    color: "#312722",
+    fontSize: 28,
+    fontWeight: "400",
+    lineHeight: 30,
   },
 
   /* =========================================================

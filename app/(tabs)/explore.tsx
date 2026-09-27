@@ -7,12 +7,11 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
-import CategoryChips from "@/components/CategoryChips";
+import ExploreSearchBar from "@/components/ExploreSearchBar";
 import MapPostFocus from "@/components/MapPostFocus";
 import FoodPostModal from "@/components/PostModal";
 import mapStyleRedesign from "@/constants/mapStyleRedesign";
@@ -42,11 +41,15 @@ export default function HomeScreen() {
 
   const [posts, setPosts] = useState<ExplorePost[]>([]);
   const [mapReady, setMapReady] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [loadedMarkers, setLoadedMarkers] = useState<Set<string>>(new Set());
 
   const mapRef = useRef<MapView>(null);
 
+  /*
+   * Get the index of the currently focused post.
+   */
   const getPostIndexById = useCallback(
     (postId: string) => posts.findIndex((post) => post.id === postId),
     [posts],
@@ -60,6 +63,9 @@ export default function HomeScreen() {
     return getPostIndexById(focusedPost.id);
   }, [focusedPost, getPostIndexById]);
 
+  /*
+   * Navigate between focused posts.
+   */
   const navigateFocusedPost = useCallback(
     (direction: "previous" | "next") => {
       if (!focusedPost || focusedIndex < 0) {
@@ -76,7 +82,9 @@ export default function HomeScreen() {
     [focusedIndex, focusedPost, posts],
   );
 
-  /* LOAD POSTS */
+  /* =========================
+     LOAD POSTS
+  ========================= */
 
   useEffect(() => {
     let mounted = true;
@@ -104,7 +112,9 @@ export default function HomeScreen() {
     };
   }, []);
 
-  /* LOCATION */
+  /* =========================
+     LOCATION
+  ========================= */
 
   const getLocation = useCallback(async () => {
     try {
@@ -145,7 +155,9 @@ export default function HomeScreen() {
     getLocation();
   }, [getLocation]);
 
-  /* MARKER IMAGE LOADED */
+  /* =========================
+     MARKER IMAGE LOADED
+  ========================= */
 
   const handleMarkerImageLoad = useCallback((postId: string) => {
     const delay = Platform.OS === "android" ? 120 : 0;
@@ -164,12 +176,18 @@ export default function HomeScreen() {
     }, delay);
   }, []);
 
+  /* =========================
+     MARKER PRESS
+  ========================= */
+
   const handleMarkerPress = useCallback((post: ExplorePost) => {
     Image.prefetch(post.image);
     setSelectedPost(post);
   }, []);
 
-  /* RECENTER */
+  /* =========================
+     RECENTER
+  ========================= */
 
   const recenterMap = useCallback(async () => {
     if (!mapReady) return;
@@ -194,12 +212,12 @@ export default function HomeScreen() {
     }
   }, [mapReady]);
 
-  /* LONG PRESS */
+  /* =========================
+     LONG PRESS
+  ========================= */
 
   const handleMapLongPress = useCallback(
     async (latitude: number, longitude: number) => {
-      // Approximate geographic radius around a marker.
-      // The Marker component itself remains untouched.
       const MARKER_RADIUS = 0.0008;
 
       const nearbyPost = posts.find((post) => {
@@ -248,7 +266,45 @@ export default function HomeScreen() {
     [posts],
   );
 
-  /* LOADING */
+  /* =========================
+     LOCATION SEARCH
+  ========================= */
+
+  const handleSearch = useCallback(async () => {
+    const query = searchQuery.trim();
+
+    if (!query) {
+      return;
+    }
+
+    try {
+      const results = await Location.geocodeAsync(query);
+
+      if (!results.length) {
+        console.log("Location not found:", query);
+        return;
+      }
+
+      const { latitude, longitude } = results[0];
+
+      const newRegion: MapRegion = {
+        latitude,
+        longitude,
+        latitudeDelta: 0.08,
+        longitudeDelta: 0.08,
+      };
+
+      setRegion(newRegion);
+
+      mapRef.current?.animateToRegion(newRegion, 800);
+    } catch (error) {
+      console.error("Location search failed:", error);
+    }
+  }, [searchQuery]);
+
+  /* =========================
+     LOADING
+  ========================= */
 
   if (!region) {
     return (
@@ -260,7 +316,9 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* MAP */}
+      {/* =========================
+          MAP
+      ========================= */}
 
       <MapView
         ref={mapRef}
@@ -272,7 +330,7 @@ export default function HomeScreen() {
         showsCompass={false}
         showsScale={false}
         customMapStyle={mapStyleRedesign}
-        showsBuildings={true}
+        showsBuildings
         showsTraffic={false}
         showsIndoors={false}
         toolbarEnabled={false}
@@ -314,39 +372,22 @@ export default function HomeScreen() {
         ))}
       </MapView>
 
-      {/* SEARCH */}
+      {/* =========================
+          SEARCH + CATEGORIES
+      ========================= */}
 
-      <View style={styles.searchContainer}>
-        <Pressable
-          style={styles.circleButton}
-          accessibilityRole="button"
-          accessibilityLabel="Open menu">
-          <Ionicons name="menu" size={24} color="#333" />
-        </Pressable>
+      <ExploreSearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        onSearch={handleSearch}
+        onFilterPress={() => {
+          // filters later
+        }}
+      />
 
-        <Pressable
-          style={styles.searchBar}
-          accessibilityRole="button"
-          accessibilityLabel="Search food or place">
-          <View style={styles.searchLeft}>
-            <Ionicons name="search" size={18} color="#999" />
-
-            <Text style={styles.searchText}>Search food or place</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <Ionicons name="options-outline" size={22} color="#F06B6B" />
-        </Pressable>
-      </View>
-
-      {/* CATEGORIES */}
-
-      <View style={styles.categories}>
-        <CategoryChips />
-      </View>
-
-      {/* RECENTER */}
+      {/* =========================
+          RECENTER
+      ========================= */}
 
       <Pressable
         style={styles.recenterButton}
@@ -356,7 +397,9 @@ export default function HomeScreen() {
         <Ionicons name="locate" size={22} color="#8F6F6F" />
       </Pressable>
 
-      {/* POST MODAL */}
+      {/* =========================
+          POST MODAL
+      ========================= */}
 
       {selectedPost && (
         <FoodPostModal
@@ -365,11 +408,14 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* MAP POST FOCUS */}
+      {/* =========================
+          MAP POST FOCUS
+      ========================= */}
 
       {focusedPost && (
         <MapPostFocus
           post={focusedPost}
+          posts={posts}
           index={focusedIndex}
           total={posts.length}
           originX={focusOrigin.x}
@@ -403,84 +449,6 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF",
     backgroundColor: "#FFFFFF",
     overflow: "hidden",
-  },
-
-  searchContainer: {
-    position: "absolute",
-    top: 60,
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    zIndex: 100,
-  },
-
-  circleButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 4,
-  },
-
-  searchBar: {
-    flex: 1,
-    height: 56,
-    marginHorizontal: 12,
-    borderRadius: 28,
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    justifyContent: "space-between",
-
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 4,
-  },
-
-  searchLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-
-  searchText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#7A7A7A",
-    fontWeight: "500",
-  },
-
-  divider: {
-    width: 1,
-    height: 24,
-    backgroundColor: "#ECECEC",
-    marginHorizontal: 14,
-  },
-
-  categories: {
-    position: "absolute",
-    top: 128,
-    left: 0,
-    right: 0,
   },
 
   recenterButton: {
