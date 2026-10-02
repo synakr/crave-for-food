@@ -13,6 +13,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
 import ExploreSearchBar from "@/components/ExploreSearchBar";
 import MapPostFocus from "@/components/MapPostFocus";
+import NavigationDrawer from "@/components/NavigationDrawer";
 import FoodPostModal from "@/components/PostModal";
 import mapStyleRedesign from "@/constants/mapStyleRedesign";
 import { seedMockDatabase } from "@/data/mock/seed";
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const [loadedMarkers, setLoadedMarkers] = useState<Set<string>>(new Set());
 
   const mapRef = useRef<MapView>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   /*
    * Get the index of the currently focused post.
@@ -380,8 +382,15 @@ export default function HomeScreen() {
         value={searchQuery}
         onChangeText={setSearchQuery}
         onSearch={handleSearch}
-        onFilterPress={() => {
-          // filters later
+        onFilterPress={() => {}}
+        onMenuPress={() => setDrawerOpen(true)}
+      />
+
+      <NavigationDrawer
+        visible={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onChallengePress={() => {
+          // TODO: navigate to Challenge
         }}
       />
 

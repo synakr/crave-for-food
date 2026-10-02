@@ -10,6 +10,7 @@ interface ExploreSearchBarProps {
   onChangeText: (text: string) => void;
   onSearch: () => void;
   onFilterPress: () => void;
+  onMenuPress: () => void;
 }
 
 export default function ExploreSearchBar({
@@ -17,6 +18,7 @@ export default function ExploreSearchBar({
   onChangeText,
   onSearch,
   onFilterPress,
+  onMenuPress,
 }: ExploreSearchBarProps) {
   const inputRef = useRef<TextInput>(null);
   const [showCategories, setShowCategories] = useState(true);
@@ -27,6 +29,7 @@ export default function ExploreSearchBar({
       <View style={styles.searchContainer}>
         {/* MENU BUTTON */}
         <Pressable
+          onPress={onMenuPress}
           style={({ pressed }) => [
             styles.circleButton,
             pressed && styles.pressed,
