@@ -1,12 +1,12 @@
 import { BlurView } from "expo-blur";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
-    Animated,
-    Easing,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 interface Props {
@@ -74,14 +74,14 @@ export default function FullCaptionModal({ visible, caption, onClose }: Props) {
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 20,
   },
 
   dim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 

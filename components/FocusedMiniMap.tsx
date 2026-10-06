@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker } from "react-native-maps";
 
-import mapStyleRedesign from "../constants/mapStyleRedesign";
 import { ExplorePost } from "../data/repositories/PostRepository";
 
 interface FocusedMiniMapProps {
@@ -94,9 +93,9 @@ export default function FocusedMiniMap({ post, posts }: FocusedMiniMapProps) {
     <View style={styles.container}>
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        style={StyleSheet.absoluteFillObject}
-        customMapStyle={mapStyleRedesign}
+        // provider={PROVIDER_GOOGLE}
+        style={StyleSheet.absoluteFill}
+        // customMapStyle={mapStyleRedesign}
         onMapReady={() => {
           setMapReady(true);
         }}

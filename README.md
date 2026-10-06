@@ -1,111 +1,107 @@
 # 🍜 Crave
 
+> 📍 Discover. Share. Explore.
+
 A location-based food discovery app built with React Native and Expo.
 
 Instead of scrolling through a traditional social media feed, users explore food experiences directly on a map. Food photos appear as interactive bubbles pinned to real-world locations, allowing users to discover hidden food gems nearby.
 
-## ✨ Features
-
-- 🗺️ Interactive map-based exploration
-- 📍 Real-time user location
-- 🍕 Food posts pinned to locations
-- 🖼️ Image-based markers
-- 📱 Upload food photos from gallery
-- 💬 Detailed post modal with image and description
-- 🔍 Discovery-focused UI
-- 📌 Explore local food spots visually
-- 🎨 Clean, minimal and modern interface
-
-## 🚀 Vision
-
-Most social media platforms organize content around people.
-
-Crave organizes content around places.
-
-The goal is to help users discover:
-
-- Hidden food spots
-- Local favorites
-- Trending eateries
-- Unique food experiences nearby
-
-through a visually immersive map experience.
-
 ## 🛠️ Tech Stack
 
-### Frontend
+- ⚛️ React Native
+- 🚀 Expo
+- 🧭 Expo Router
+- 📘 TypeScript
+- 🗄️ Supabase
+- 🗺️ React Native Maps
 
-- React Native
-- Expo
-- Expo Router
+## 📱 What Crave Does
 
-### Maps
+Crave allows users to discover and share location-based content.
 
-- react-native-maps
+Core areas include:
 
-### Device Features
+- 🔎 Explore
+- 📸 Posts
+- 👤 Profiles
+- 💬 Comments
+- 🏆 Leaderboard
+- 📍 Location-based discovery
 
-- expo-location
-- expo-image-picker
-
-### UI
-
-- @expo/vector-icons
-
-## 📂 Project Structure
+## 🏗️ Project Structure
 
 ```text
-app/
-├── _layout.tsx
-├── index.tsx
-└── (tabs)/
-    ├── _layout.tsx
-    ├── explore.tsx
-    ├── saved.tsx
-    └── profile.tsx
-
-src/
-└── screens/
-    └── ExploreScreen.tsx
+app/          → 📱 Screens and routes
+components/   → 🧩 Reusable UI components
+data/         → 🗃️ Data and repositories
+lib/          → 🔧 Shared services/utilities
+docs/         → 📚 Project documentation
 ```
 
-## 🔮 Planned Features
+> ℹ️ The exact structure may evolve. See `PROJECT.md` and `docs/ARCHITECTURE.md` for the current architecture.
 
-### V1
+## ⚙️ Development
 
-- [ ] Upload caption support
-- [ ] Supabase backend integration
-- [ ] Persistent posts
-- [ ] 24-hour post expiry
-- [ ] Save/bookmark locations
+### 📦 Install
 
-### V2
+```bash
+npm install
+```
 
-- [ ] Food clustering
-- [ ] Search locations
-- [ ] User profiles
-- [ ] Engagement metrics
+### 🚀 Start Expo
 
-### Future Discovery Modes
+```bash
+npx expo start
+```
 
-- 🍜 Food
-- ✈️ Travel
-- 💎 Hidden Gems
-- ☕ Cafés
-- 📸 Photography Spots
-- 🌃 Nightlife
-- 🎉 Events
+### 🤖 Android
 
-## 🧪 Current MVP Status
+```bash
+npx expo run:android
+```
 
-- ✅ Map rendering
-- ✅ User location
-- ✅ Interactive food bubbles
-- ✅ Image upload
-- ✅ Modal previews
-- ✅ Modern UI
-- ✅ Tab navigation
+### 🍎 iOS
 
-## 📜 License
+```bash
+npx expo run:ios
+```
 
-Built as an experimental location-based social discovery platform.
+## 📚 Project Documentation
+
+For contributors and AI coding agents:
+
+| 📄 File                | 🎯 Purpose                                |
+| ---------------------- | ----------------------------------------- |
+| `AGENTS.md`            | 🤖 How to work on Crave                   |
+| `PROJECT.md`           | 🌍 What Crave is and how it fits together |
+| `TODO.md`              | 📋 Current work queue                     |
+| `DECISIONS.md`         | 🧠 Important architectural decisions      |
+| `docs/ARCHITECTURE.md` | 🏗️ Detailed architecture                  |
+| `docs/DATABASE.md`     | 🗄️ Database structure and rules           |
+| `docs/features/`       | 🧩 Feature-specific context               |
+
+### 🤖 For AI Agents
+
+Start with:
+
+```text
+AGENTS.md
+    ↓
+PROJECT.md
+    ↓
+Relevant documentation in docs/
+    ↓
+Source code
+```
+
+> ⚡ Do not read the entire repository blindly. Inspect only the files relevant to the task.
+
+## 🔐 Environment Variables
+
+Create a `.env` file containing the environment variables required by the project.
+
+> 🚨 Never commit secrets or API keys.
+
+## 📌 Project Status
+
+See `TODO.md` for the current implementation status and known work.

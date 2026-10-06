@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
 
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.45)",
   },
 
@@ -454,13 +454,13 @@ const styles = StyleSheet.create({
   ========================== */
 
   composerOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     justifyContent: "flex-end",
   },
 
   composerBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.58)",
   },
 

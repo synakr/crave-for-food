@@ -1,453 +1,634 @@
-# Crave Agent Guide
+# CRAVE — Agent Context & Engineering Guide
 
-## Project Overview
-
-Crave is a location-based social discovery app. Food is the current primary use case, while the architecture is intended to support broader discovery modes in the future.
-
-The current app is an Expo/React Native MVP backed by in-memory mock data. It does not yet have authentication, a server API, persistent storage, or production image storage.
-
-The current development priority is Android, while keeping the architecture compatible with iOS and potentially web in the future.
+> **Purpose:** This file is the primary context document for AI coding agents working on Crave.
+> Read it before making changes. Treat the **Current Codebase** sections as the source of truth over older conversations, stale README text, or assumptions.
 
 ---
 
-## Tech Stack
+## 0. AI AGENT OPERATING PROTOCOL
 
-- Expo SDK 54 (`expo` `~54.0.37`) with Expo Router (`~6.0.23`)
-- React 19.1
-- React Native 0.81.5
-- TypeScript 5.9
-- React Native Maps 1.20.1 with the Google provider
-- Reanimated 4
-- Gesture Handler
-- Safe Area Context
-- Expo Location for permissions, current position, and geocoding
-- Expo Image Picker for local gallery selection
-- Expo Blur
-- `@expo/vector-icons` / Ionicons
-- Hermes
-- React Native New Architecture enabled on Android
+### Before doing anything
+
+1. Read this file completely enough to understand the relevant architecture and constraints.
+2. Inspect the actual target file(s) before editing them.
+3. Search for existing components, repositories, constants, or utilities before creating new ones.
+4. Preserve the current architecture unless the task explicitly asks for architectural change.
+5. Make the smallest correct change that satisfies the request.
+6. Do not rewrite unrelated code or redesign UI without being asked.
+
+### Context efficiency
+
+- Do **not** ask the user to re-explain information already present in this file.
+- Do **not** dump the whole repository back to the user.
+- When a task is clear, act directly.
+- If one missing fact blocks implementation, ask only for that fact.
+- Prefer inspecting/searching the repository over guessing.
+- Reuse existing components, models, repository contracts, constants, and patterns.
+- Avoid introducing dependencies when an installed dependency already solves the problem.
+- Keep explanations short; report only what changed, why, and any required command/test.
+
+### Source-of-truth priority
+
+When information conflicts, use this order:
+
+1. Actual current source files
+2. `package.json` / Expo config
+3. This `AGENTS.md`
+4. Current task/request
+5. README or historical conversation context
+
+Do not revive code from older pasted snippets merely because it existed previously.
 
 ---
 
-## Repository Structure
+# 1. PRODUCT
+
+**Crave** is a location-based social discovery app.
+
+The architecture is intentionally general-purpose. Food is the current visual/product direction, but Crave should remain extensible to other discovery modes such as travel or other location-based content.
+
+Current state is an **Expo + React Native MVP using an in-memory mock database**.
+
+There is currently no production authentication, backend API, persistent database integration, or production media storage in the active codebase.
+
+### Current development focus
+
+- Mobile-first React Native experience
+- Android and iOS compatibility
+- Map-based discovery
+- Social post interactions
+- Profile / badges / leaderboard / challenges
+- Clean, premium visual UI
+- Repository-based data access so the mock backend can later be replaced
+
+---
+
+# 2. CURRENT TECH STACK — SOURCE OF TRUTH
+
+Current versions from `package.json`:
+
+- Expo **SDK 57** (`expo ~57.0.26`)
+- Expo Router `~57.0.24`
+- React **19.2.3**
+- React Native **0.86.3**
+- TypeScript `~6.0.3`
+- React Native Maps **1.27.2**
+- React Native Reanimated **4.5.1**
+- React Native Gesture Handler `~2.32.0`
+- React Native Safe Area Context `~5.7.0`
+- React Native SVG `15.15.4`
+- Expo Location `~57.0.20`
+- Expo Image Picker `~57.0.20`
+- Expo Blur `~57.0.3`
+- Expo Linear Gradient `^57.0.2`
+- `@expo/vector-icons` `^15.0.3`
+- React Native Web `~0.21.0`
+- Hermes / New Architecture through current Expo/RN setup
+
+### Important migration fact
+
+The project was migrated from the old Expo SDK 54 setup to **SDK 57**. Do not use old SDK 54 assumptions when changing Expo/native configuration.
+
+The current codebase has already passed the project's Expo compatibility checks after the migration.
+
+---
+
+# 3. ROUTE / APP STRUCTURE
 
 ```text
-app/                         Expo Router routes and screen entry points
-    _layout.tsx              Root Stack configuration
-    index.tsx                Redirect to the Explore tab
-    create-post.tsx          Local image/text post composer
-    (tabs)/                  Explore, Saved, Activity, and Profile routes
+app/
+├── _layout.tsx                 Root Expo Router stack
+├── index.tsx                   Entry/redirect
+├── create-post.tsx             Post creation screen
+├── challenge.tsx               Daily challenge screen
+├── leaderboard.tsx             Leaderboard route
+└── (tabs)/
+    ├── _layout.tsx             Tab navigation
+    ├── explore.tsx             Main map/discovery screen
+    ├── saved.tsx               Saved posts
+    ├── activity.tsx            Activity
+    └── profile.tsx             Profile
 
-components/                  Reusable UI, map interactions, tab bar, and post modals
-    PostModal/               Post detail and post action components
+components/
+├── Badge.tsx
+├── CategoryChips.tsx
+├── CommentModal.tsx
+├── DemoPopup.tsx
+├── ExploreSearchBar.tsx
+├── FloatingTabBar.tsx
+├── FocusedMiniMap.tsx
+├── Leaderboard.tsx
+├── LikesModal.tsx
+├── MapPostFocus.tsx
+├── NavigationDrawer.tsx
+└── PostModal/
+    ├── FullCaptionModal.tsx
+    ├── PostActions.tsx
+    ├── PostCaption.tsx
+    ├── PostHeader.tsx
+    ├── PostLocation.tsx
+    ├── PostModal.tsx
+    └── index.ts
 
-constants/                   Current user and map style constants
+constants/
+├── currentUser.ts
+├── mapStyle.ts
+└── mapStyleRedesign.ts
 
-data/models/                 Domain interfaces for posts, users, places, and interactions
+data/
+├── FoodPost.ts
+├── challenges/
+│   ├── personalChallenges.ts
+│   ├── personalChallengeSelector.ts
+│   └── types.ts
+├── models/
+├── mock/
+│   ├── db.ts
+│   └── seed.ts
+└── repositories/
+    ├── CommentRepository.ts
+    ├── LikeRepository.ts
+    ├── MockCommentRepository.ts
+    ├── MockLikeRepository.ts
+    ├── MockPostRepository.ts
+    ├── MockSavedRepository.ts
+    ├── PostRepository.ts
+    ├── SavedRepository.ts
+    └── index.ts
 
-data/repositories/           Repository interfaces and mock implementations
-
-data/mock/                   Mutable mock database and seed data
-
-assets/                      App icon and splash image
-
-android/                     Generated/native Android project
-
-backup-code/                 Older code kept for reference, not active flow
+assets/                        App assets
 ```
 
-`README.md` is partly stale and refers to `src/screens/ExploreScreen.tsx`, which is not present.
+### Important
 
-Use the actual route and component tree above as the source of truth.
+`README.md` may contain older architecture/file references. **Do not treat it as authoritative** if it conflicts with the actual tree.
 
 ---
 
-## Architecture
+# 4. ARCHITECTURE
 
-The current architecture is:
+Current architecture:
 
 ```text
-UI
- ↓
-Screens / Components
- ↓
+Screens / UI
+     ↓
 Repositories
- ↓
+     ↓
 Mock Database
 ```
 
-The long-term target architecture is:
+Target production architecture:
 
 ```text
-UI
- ↓
-Features / Domain
- ↓
-Services
- ↓
+Screens / UI
+     ↓
+Features / Domain / Services
+     ↓
 Repositories
- ↓
-Backend / Providers
+     ↓
+Supabase / External Providers
 ```
 
-Keep infrastructure replaceable where practical.
+The repository boundary is intentional. Keep it.
 
-The UI should not become tightly coupled to:
+### Do
 
-- Supabase
-- Google Maps
-- Cloudflare R2
-- Specific API implementations
+- Keep UI focused on presentation and interaction.
+- Put data operations behind repositories when a repository exists.
+- Keep infrastructure replaceable.
+- Keep provider-specific code isolated.
+
+### Don't
+
+- Put Supabase calls directly into screens.
+- Put random mock arrays directly into screens when the data belongs to the data layer.
+- Couple unrelated business logic to Google Maps.
+- Create a second competing repository/data-access pattern without a strong reason.
 
 ---
 
-## Target Production Architecture
+# 5. CURRENT DATA LAYER
+
+`data/mock/db.ts` contains the mutable in-memory singleton.
+
+It currently contains collections for concepts including:
+
+- users
+- places
+- posts
+- post contents
+- likes
+- comments
+- follows
+- saved posts
+- related entities
+
+`data/mock/seed.ts` populates development/demo data.
+
+### Current repositories
+
+`data/repositories/index.ts` exposes:
+
+```ts
+postRepository;
+commentRepository;
+likeRepository;
+savedRepository;
+```
+
+Current implementations are mock repositories:
 
 ```text
-                    CRAVE APP
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-        ▼              ▼              ▼
-       UI          Features        Navigation
-        │              │
-        └───────┬──────┘
-                ▼
-        Domain / Services
-                │
-                ▼
-          Repositories
-                │
-        ┌───────┴────────┐
-        ▼                ▼
-     Supabase         Providers
-        │                │
-   ┌────┼────┐      ┌────┼─────────┐
-   │    │    │      │    │         │
-  DB   Auth Realtime Map Storage Analytics
-                     │
-                  Google Maps
-                     │
-                 Cloudflare R2
+PostRepository   → MockPostRepository
+CommentRepository → MockCommentRepository
+LikeRepository   → MockLikeRepository
+SavedRepository  → MockSavedRepository
 ```
 
-### Planned infrastructure
+### Current user
 
-**Supabase**
-- PostgreSQL
-- Authentication
-- Realtime
-- Edge Functions when genuinely required
-
-**Cloudflare**
-- R2 for image/media storage
-- CDN/cache for media delivery
-
-**Google Maps**
-- Current map provider
-- Keep map-specific logic isolated so another provider can be introduced later
-
-The repository/service/provider boundaries should allow infrastructure to change without requiring large rewrites of screens and features.
-
----
-
-## Current MVP Product Rules
-
-### Content
-
-- Photo posts only.
-- Video uploads are NOT supported.
-- Images should be compressed before production upload.
-- Users normally do not manually select a location.
-- Device GPS should automatically provide the post location when permission is available.
-- If GPS is unavailable, a manual location fallback may be introduced.
-- Production media storage is planned for Cloudflare R2.
-
-### Social Activity
-
-Initially, these do NOT require realtime:
-
-- Likes
-- Comments
-- Follows
-- Notifications
-- General feed updates
-
-Normal API/database requests are sufficient.
-
-Users can see updated social activity after refreshing/reloading.
-
-### Map Realtime
-
-Realtime is initially reserved for new posts appearing on the map.
-
-```text
-User creates post
-      ↓
-Backend / database
-      ↓
-Realtime event
-      ↓
-Nearby users
-      ↓
-New map marker
-```
-
-Do not add realtime connections for every social interaction unless explicitly requested.
-
----
-
-## Current Data Flow
-
-`data/mock/db.ts` exports a mutable singleton containing:
-
-- Users
-- Places
-- Posts
-- Post contents
-- Likes
-- Comments
-- Follows
-- Saved records
-- Other collections
-
-`seedMockDatabase()` populates demo users, places, posts, and content.
-
-`postRepository.getExplorePosts()` joins posts to their author, place, and IMAGE content and returns the `ExplorePost` view shape used by the map.
-
-Like, save, and comment repositories mutate the singleton directly.
-
-`constants/currentUser.ts` currently fixes the current user to `user-1`.
-
-There is currently no:
-
-- API client
-- Database adapter
-- Authentication
-- Upload service
-- Persistent storage across app restarts
-
----
-
-## Mock Database Rules
-
-The mock database is temporary infrastructure.
-
-Do not treat it as the final backend architecture.
-
-Keep mock models and repository contracts coherent with the intended production data model.
-
-Do not replace repository operations with random screen-local fixtures.
-
-The intended migration is:
-
-```text
-Current:
-
-UI
- ↓
-Repository
- ↓
-Mock DB
-
-
-Future:
-
-UI
- ↓
-Repository
- ↓
-Supabase
-```
-
-The UI should require minimal changes when moving from the mock implementation to Supabase.
-
-### Important Current Behavior
-
-`seedMockDatabase()` resets:
-
-- Posts
-- Likes
-- Comments
-- Follows
-- Related collections
-
-whenever Explore mounts.
-
-`db.saved` is not reset, so current reset behavior is intentionally inconsistent.
-
-Do not silently change this behavior unless the task requires it.
-
----
-
-## Current User
-
-`constants/currentUser.ts` currently defines the active mock user.
-
-Current mock user:
+`constants/currentUser.ts` currently defines the active mock user as:
 
 ```text
 user-1
 ```
 
-This is temporary.
+Do not introduce another current-user mechanism casually.
 
-Do not introduce a second competing current-user mechanism without a clear architectural reason.
-
-Future authentication should replace this with an authenticated user/session while preserving repository/service boundaries.
+Future authentication should replace this mechanism while preserving repository/service boundaries.
 
 ---
 
-## UI and Coding Conventions
+# 6. SEEDING / STATE BEHAVIOR
 
-- Use TypeScript with strict mode.
-- Use the `@/*` path alias.
-- Typed Expo Router routes are enabled.
-- React Compiler experiment is enabled.
-- Prefer functional components and React hooks.
-- Follow existing local coding style.
-- Existing source generally uses double-quoted imports/strings.
-- Use `StyleSheet.create` for component styles.
-- Keep styles colocated with components.
-- Do not introduce a shared theme/design-token system unless explicitly required.
+`seedMockDatabase()` is currently called by Explore when loading posts.
 
-Existing UI uses:
+Important existing behavior:
 
-- Ionicons
-- BlurView
-- Rounded surfaces
-- Shadows/elevation
-- Absolute overlays
-- Animated modal transitions
+- Several mock collections are reset/reseeded when Explore mounts.
+- Saved state has historically behaved differently and may persist in the singleton.
+- Other screens can therefore depend on Explore having initialized mock data first.
 
-Explore currently has:
+Do **not** silently change this behavior unless the task specifically involves state/seed behavior.
 
-- Cream/pink map treatment
-- Translucent floating controls
-- Image-based map markers
-
-Other tabs may use different visual treatments.
-
-Create Post currently uses a light white/gray surface.
-
-Preserve the existing visual language unless the task explicitly requests a redesign.
+If changing seeding, inspect `data/mock/seed.ts` and `data/mock/db.ts` first.
 
 ---
 
-## Repository Rules
+# 7. DOMAIN MODELS
 
-Prefer repository methods for:
+Current models include:
 
-- Posts
-- Likes
-- Saves
+- `User`
+- `UserLocation`
+- `Place`
+- `Post`
+- `PostContent`
+- `Like`
+- `Comment`
+- `Follow`
+- `FollowRequest`
+- `Saved`
+- `Mention`
+- `MapPromotion`
+
+`PostContent` currently has content types:
+
+```text
+IMAGE | VIDEO | GIF | AUDIO | TEXT
+```
+
+However, **the current MVP post/upload experience is photo-first**. Do not infer that video upload infrastructure is implemented merely because the domain type allows it.
+
+---
+
+# 8. EXPLORE / MAP — CURRENT IMPLEMENTATION
+
+Primary file:
+
+```text
+app/(tabs)/explore.tsx
+```
+
+The Explore screen currently handles:
+
+- Device location
+- Map rendering
+- Post markers
+- Marker image loading
+- Marker press → post modal
+- Marker long press → focused post experience
+- Focused-post previous/next navigation
+- Map recentering
+- Location search/geocoding
+- Navigation drawer
+- Search UI
+- Mock post loading/prefetching
+
+### Current location fallback
+
+```text
+latitude: 23.5335
+longitude: 91.4845
+latitudeDelta: 0.03
+longitudeDelta: 0.03
+```
+
+When location permission is available, Explore gets the current device position with Expo Location.
+
+### Current map behavior
+
+The active `MapView` in the latest code currently has the Google provider line commented out:
+
+```tsx
+// provider={PROVIDER_GOOGLE}
+```
+
+Therefore, **on iOS the map currently falls back to Apple Maps**. Android/provider behavior should be checked against the exact current file before modifying it.
+
+The current custom map style is also commented out:
+
+```tsx
+// customMapStyle={mapStyle}
+```
+
+Do not assume `mapStyleRedesign` is currently active just because the constant exists.
+
+### Map-specific implementation rules
+
+Preserve these behaviors unless the task explicitly changes them:
+
+- Image markers are custom React Native views.
+- `tracksViewChanges` is controlled using `loadedMarkers`.
+- Android marker image loading intentionally uses a delay before updating state.
+- Marker press opens the post modal.
+- Long press can open `MapPostFocus`.
+- `mapRef` is used for recentering and coordinate/screen calculations.
+
+### Map provider architecture
+
+Keep map-provider decisions isolated to the map layer.
+
+Do not spread Google Maps-specific APIs through unrelated components.
+
+If platform-specific behavior is required, prefer a localized pattern such as:
+
+```tsx
+{...(Platform.OS === "android"
+  ? { provider: PROVIDER_GOOGLE }
+  : {})}
+```
+
+rather than duplicating the entire map component.
+
+---
+
+# 9. GOOGLE MAPS / NATIVE BUILD CONTEXT
+
+The project uses `react-native-maps@1.27.2`.
+
+`app.config.js` configures the React Native Maps plugin with:
+
+```js
+[
+  "react-native-maps",
+  {
+    androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+  },
+];
+```
+
+The API key is supplied through the environment and **must never be hardcoded into source files or committed to Git**.
+
+`.env` may exist locally. Never copy or expose its secret values into this document, source code, logs, or responses.
+
+### Important debugging fact
+
+A minimal clean Expo test app successfully rendered Google Maps in **Expo Go without configuring a user API key**.
+
+This means:
+
+- The device can render Google Maps.
+- Google Play Services/maps renderer is functional.
+- `react-native-maps@1.27.2` itself works in the Expo Go environment.
+- Expo Go has its own native configuration.
+
+Therefore, if the Crave **native development build** has a blank/black Google map while the clean Expo Go test works, investigate Crave's generated/native configuration rather than assuming the phone or `react-native-maps` package is broken.
+
+### Native configuration rule
+
+Generated native folders are not the architectural source of truth. Prefer Expo config/plugin changes over manual edits to generated native files when possible.
+
+After native configuration changes, rebuild the native app.
+
+---
+
+# 10. LOCATION
+
+`expo-location` is used for:
+
+- Foreground location permission
+- Current position
+- Geocoding/search
+
+Location failure must not crash the UI.
+
+Current search behavior uses platform geocoding and logs failures rather than presenting a complete search-error UI.
+
+Do not add background location tracking unless explicitly requested.
+
+---
+
+# 11. POST MODAL / SOCIAL INTERACTIONS
+
+The Post Modal is componentized under:
+
+```text
+components/PostModal/
+```
+
+It currently includes pieces for:
+
+- Header
+- Caption
+- Full caption modal
+- Location
+- Actions
 - Comments
-- Follows
-- Places
-- Users
+- Likes
 
-Avoid direct `db` access from UI components when a repository already exists.
+Current social repository interactions include:
 
-When adding functionality:
+- Likes
+- Comments
+- Saves
 
-1. Define/update the model if necessary.
-2. Define/update the repository contract.
-3. Implement mock repository behavior.
-4. Connect the UI through the repository.
-5. Keep the implementation compatible with the future backend.
+Use the repository layer for these operations.
 
-Do not bypass an existing repository abstraction without a clear reason.
+Do not add realtime merely because a social interaction exists.
 
 ---
 
-## Map Architecture
+# 12. PROFILE — CURRENT IMPLEMENTATION
 
-The current map provider is Google Maps through React Native Maps.
-
-Keep map-specific functionality isolated.
-
-Avoid spreading Google-specific APIs throughout unrelated screens.
-
-Conceptually:
+Primary file:
 
 ```text
-CRAVE Map UI
-     ↓
-Map-specific abstraction/layer
-     ↓
-Google Maps
+app/(tabs)/profile.tsx
 ```
 
-Future providers may include Mapbox, MapLibre, or another provider.
+The current Profile screen includes:
 
-Do not build provider-specific assumptions into unrelated business logic.
+- Fixed hero image background
+- Scroll-driven blur effect
+- Scroll-driven glass tint
+- Profile identity
+- Verification icon
+- Followers/following/creation stats
+- Share/follow/message actions
+- Horizontal badge selector
+- Selected badge description
+- Post grid/content area
+- Leaf-branch decorative SVG component
 
-Preserve existing marker behavior, including `tracksViewChanges` handling and delayed Android state updates, unless there is a clear reason to change it.
+The hero image intentionally remains fixed while the scrollable content moves over it.
+
+Do not remove/reimplement this effect unless explicitly asked.
+
+Current profile data is still derived from the mock database and contains development fallbacks/placeholders to keep the UI populated.
 
 ---
 
-## Location Rules
+# 13. LEADERBOARD / CHALLENGE
 
-Expo Location is currently used for:
+### Leaderboard
 
-- Permission requests
-- Current device position
-- Geocoding
-
-The normal post creation flow should automatically associate a post with the user's current location when permission is available.
-
-Location permission failure should not crash the app.
-
-Current Explore behavior falls back to approximately:
+Route:
 
 ```text
-23.5335, 91.4845
+app/leaderboard.tsx
 ```
 
-when location permission fails.
+It currently renders:
 
-Search currently uses platform geocoding and logs failures rather than presenting a complete in-app error state.
+```tsx
+<Leaderboard />
+```
+
+The actual UI lives in:
+
+```text
+components/Leaderboard.tsx
+```
+
+### Challenge
+
+Route:
+
+```text
+app/challenge.tsx
+```
+
+Current behavior:
+
+- Selects personal challenges from `data/challenges`.
+- Requests camera permission.
+- Opens the camera through Expo Image Picker.
+- Gets current location.
+- Builds a local challenge post object.
+- Currently logs the generated post and navigates back.
+
+Do not assume challenge posts are persisted to the mock database unless the code explicitly does so.
 
 ---
 
-## Media Rules
+# 14. NAVIGATION DRAWER
 
-Current MVP:
-
-- Photos only.
-- No video uploads.
-- Compress images before production upload.
-- Do not unnecessarily upload original high-resolution images.
-- Prefer thumbnails/optimized versions for map/feed display.
-- Production media storage is planned for Cloudflare R2.
-
-Future media flow:
+Primary file:
 
 ```text
-User selects image
-      ↓
+components/NavigationDrawer.tsx
+```
+
+Current drawer contains navigation for:
+
+- Explore
+- Saved
+- Activity
+- Leaderboard
+- Settings placeholder
+- Help & Feedback placeholder
+- Daily Challenge
+
+It uses animated slide-in/out behavior and a backdrop.
+
+Do not add navigation destinations that do not have an actual route unless explicitly requested.
+
+---
+
+# 15. MEDIA
+
+Current MVP is photo-oriented.
+
+Current development images may come from remote URLs and local image picker URIs.
+
+Planned production flow:
+
+```text
+Select image
+   ↓
 Compress / optimize
-      ↓
-Upload to R2
-      ↓
+   ↓
+Upload to Cloudflare R2
+   ↓
 Store media reference in Supabase
-      ↓
-Display through CDN/cache
+   ↓
+Serve optimized media through CDN/cache
 ```
 
-Do not introduce video infrastructure unless explicitly requested.
+Do not implement R2/Supabase media infrastructure unless explicitly requested.
+
+Do not add video infrastructure casually.
 
 ---
 
-## Realtime Rules
+# 16. FUTURE BACKEND
 
-Use realtime selectively.
+Planned production backend:
 
-### Initially realtime
+```text
+React Native UI
+      ↓
+Services / Repositories
+      ↓
+Supabase
+ ┌────┼───────────┐
+ DB   Auth     Realtime
+
+Media:
+React Native → Cloudflare R2 → CDN/cache
+```
+
+Supabase is intended for:
+
+- PostgreSQL
+- Authentication
+- Realtime
+- Edge Functions only when server-side logic genuinely requires them
+
+Cloudflare R2 is intended for media storage.
+
+Do not introduce backend infrastructure unless the task explicitly requires it.
+
+---
+
+# 17. REALTIME POLICY
+
+Initially realtime is intended for:
 
 - New posts appearing on the map
 
-### Initially NOT realtime
+Initially **not realtime**:
 
 - Likes
 - Comments
@@ -455,390 +636,359 @@ Use realtime selectively.
 - Notifications
 - General feed refreshes
 
-Normal API/database requests are sufficient for those interactions initially.
+Normal requests/database operations are sufficient for those interactions initially.
 
-Do not add persistent realtime subscriptions merely for convenience.
-
----
-
-## Backend Direction
-
-Planned production backend:
-
-```text
-React Native
-      ↓
-Repositories / Services
-      ↓
-Supabase
-      ├── PostgreSQL
-      ├── Auth
-      ├── Realtime
-      └── Edge Functions
-```
-
-Cloudflare R2 is planned for media storage.
-
-Edge Functions should be introduced only when backend-side logic is genuinely needed, such as:
-
-- Secure business logic
-- Webhooks
-- Third-party API calls requiring secret keys
-- Complex server-side operations
-- Operations that should not be trusted to the client
-
-Do not move simple CRUD operations into Edge Functions unnecessarily.
+Do not create persistent realtime subscriptions just for convenience.
 
 ---
 
-## Development Commands
+# 18. UI / DESIGN RULES
 
-Run from the repository root:
+Crave's visual language is evolving, but the current code contains a strong premium/mobile aesthetic.
 
-```bash
-npm install
+Existing patterns include:
 
-npm run start       # Start Expo development server
+- Rounded cards/surfaces
+- Blur / glass effects
+- Floating controls
+- Shadows/elevation
+- Animated transitions
+- Image-based map markers
+- Custom decorative SVG elements
+- Light/cream map and UI treatments in Explore
+- Dark/glass treatment in the current Profile hero
 
-npm run android     # Build/run native Android app
+### Rules
 
-npm run ios         # Build/run native iOS app
-
-npm run web         # Start Expo for web
-
-npm run lint        # Run Expo ESLint configuration
-
-npx tsc --noEmit    # TypeScript type check
-```
-
-`npm run reset-project` points to `scripts/reset-project.js`, but no `scripts/` directory currently exists.
-
-Do not rely on that command unless the script has been restored.
-
----
-
-## Testing, Linting, and Builds
-
-There is currently no project-owned:
-
-- Test suite
-- Test script
-- Jest configuration
-- Vitest configuration
-- Test files
-
-TypeScript:
-
-```bash
-npx tsc --noEmit
-```
-
-Lint:
-
-```bash
-npm run lint
-```
-
-Native Android builds use:
-
-```text
-android/gradlew
-android/gradlew.bat
-```
-
-Current Gradle version:
-
-```text
-8.14.3
-```
-
-`npm run android` is the normal developer entry point.
-
-Validate native functionality on a real device/emulator where appropriate, especially:
-
-- Maps
-- Location permissions
-- Image picker
-- Marker rendering
-- Native animations
-
-Web does not provide equivalent native behavior.
+- Preserve existing UI unless redesign is requested.
+- Match surrounding component styling when adding UI.
+- Prefer existing icons/components.
+- Use `StyleSheet.create`.
+- Keep styles close to the component.
+- Do not introduce a global design-token/theme system without a clear requirement.
+- Do not make unrelated screens visually consistent merely for consistency if they intentionally use different treatments.
 
 ---
 
-## Expo / Native Rules
+# 19. TYPESCRIPT / CODE STYLE
 
-This project targets Expo SDK 54.
+Use:
+
+- TypeScript
+- Functional components
+- React hooks
+- `@/*` aliases
+- Strict typing
+- `StyleSheet.create`
+- Existing local formatting/style conventions
+
+Existing source generally uses double quotes.
+
+Avoid unnecessary abstraction.
+
+Do not create a component or utility merely to wrap a one-off expression unless it improves maintainability.
+
+---
+
+# 20. DEPENDENCY RULES
+
+Before adding a dependency:
+
+1. Check `package.json`.
+2. Check whether Expo/RN already provides the required capability.
+3. Check whether an installed package can solve it.
+4. Add a new dependency only when necessary.
+
+Do not upgrade Expo/React Native/RN Maps versions casually.
+
+Version changes can require native rebuilds and compatibility work.
+
+---
+
+# 21. NATIVE / EXPO RULES
+
+Current Expo SDK is **57**.
 
 Before changing:
 
-- Expo configuration
-- Native modules
+- `app.json`
+- `app.config.js`
 - Expo plugins
-- Routing
-- Build configuration
+- native modules
+- Android/iOS configuration
+- routing
+- build settings
 
-inspect the existing configuration and use the appropriate Expo SDK 54 documentation.
+inspect the current configuration first.
 
-Avoid casual edits to generated/native Android files.
+Prefer config plugins and Expo configuration over manual generated-native edits.
 
-Native changes can be overwritten by Expo prebuild and may require matching Expo SDK 54 configuration.
+If a native dependency/configuration changes, expect to rebuild the native development app.
 
-Current Android release configuration is development-only:
+### Generated native project
 
-- Release builds currently use the debug signing configuration.
-- Release minification is disabled by default.
-
-Do not treat the current release configuration as production-ready without explicitly hardening it.
-
----
-
-## Constraints and Do Not Change Casually
-
-- Do not replace the mock data layer with ad hoc screen-local fixtures.
-- Do not introduce a production backend unless explicitly requested.
-- Do not add authentication unless explicitly requested.
-- Do not add video upload infrastructure.
-- Do not add unnecessary realtime functionality.
-- Do not introduce new dependencies unless necessary.
-- Do not rewrite working architecture unnecessarily.
-- Do not redesign existing UI unless requested.
-- Do not modify native Android configuration casually.
-- Do not change route names unnecessarily.
-- Do not remove repository abstractions in favor of direct backend calls.
-- Do not assume planned functionality already exists.
-- Do not silently implement future features simply because they are described in this document.
+The latest shared codebase archive does **not** include an `android/` source directory. Treat any locally generated Android project as generated/build state rather than the primary repository architecture unless the user explicitly provides it as part of the source of truth.
 
 ---
 
-## Common Pitfalls
+# 22. DEVELOPMENT COMMANDS
 
-### Data / State
+From project root:
 
-- Saved and Profile can appear empty if opened before Explore has seeded the in-memory database.
-- `seedMockDatabase()` resets several collections whenever Explore mounts.
-- `db.saved` is not reset.
-- Current data does not persist across app restarts.
-
-### Create Post
-
-The floating tab bar's plus action currently:
-
-1. Selects an image.
-2. Passes `uploadedImage` / `uploadId` route parameters.
-
-Explore currently ignores those parameters, so the selected image can be discarded.
-
-Post creation is currently incomplete.
-
-Text submission currently only logs to the console.
-
-### Map
-
-- Google map rendering depends on native/provider configuration.
-- No Google Maps API key is currently visible in `app.json`.
-- Marker image rendering uses `tracksViewChanges` and delayed Android state updates.
-- Preserve this behavior when modifying marker components.
-- `getExplorePosts()` currently does not filter `expires_at`.
-- `getExplorePosts()` does not currently sort posts.
-- Missing image validation is incomplete.
-- Empty marker image URIs can occur.
-
-### Search / Location
-
-- Search uses platform geocoding.
-- Geocoding failures are currently logged rather than shown through a complete error UI.
-- Explore uses a fallback location if permission fails.
-
-### UI Placeholders
-
-The following may currently be visual placeholders or incomplete:
-
-- Category chips
-- Some profile controls
-- Some profile tabs
-- Some menu/filter affordances
-- Some activity functionality
-
-Do not assume visual presence means backend functionality exists.
-
-### Legacy Files
-
-These appear to be legacy/reference material rather than active flow:
-
-```text
-components/DemoPopup.tsx
-data/FoodPost.ts
-backup-code/PostModal.tsx
-constants/mapStyle.ts
+```bash
+npm install
+npm run start
+npm run android
+npm run ios
+npm run web
+npm run lint
+npx tsc --noEmit
 ```
 
-Do not modify legacy files unless the task explicitly concerns them.
+Equivalent direct native commands commonly used:
+
+```bash
+npx expo start
+npx expo run:android
+npx expo run:ios
+```
+
+### When to use what
+
+**JS/UI-only change:**
+
+```bash
+npx expo start
+```
+
+**Native dependency/config/plugin change:**
+
+```bash
+npx expo run:android
+```
+
+or iOS equivalent.
+
+Do not tell an agent to rebuild native code for every JSX/style change.
 
 ---
 
-## Agent Rules
+# 23. TESTING / VALIDATION
 
-### Before Making Changes
+There is currently no project-owned Jest/Vitest test suite.
 
-1. Read this `AGENTS.md`.
-2. Inspect the relevant existing files.
-3. Understand the current implementation before introducing new code.
-4. Check whether an existing repository, component, hook, or utility already solves the problem.
-
-### While Making Changes
-
-- Prefer the smallest clean change that solves the task.
-- Preserve working architecture.
-- Prefer existing patterns over introducing new patterns.
-- Avoid unnecessary dependencies.
-- Avoid unnecessary refactors.
-- Keep repository/model contracts coherent.
-- Keep business logic out of UI components where practical.
-- Do not introduce production infrastructure unless explicitly requested.
-- Do not implement planned/incomplete features unless explicitly requested.
-- Preserve Android behavior when modifying native-sensitive components.
-- Do not make unrelated changes while solving a task.
-
-### After Making Changes
-
-When practical:
+Use:
 
 ```bash
 npx tsc --noEmit
 npm run lint
 ```
 
-If a change affects native functionality, validate it on Android/device where possible.
+For native behavior, test on a real device/emulator when appropriate.
 
-If architecture, folder structure, product rules, or major behavior materially changes, update this `AGENTS.md`.
+Especially test:
 
----
+- Maps
+- Location permission
+- Image picker
+- Marker rendering
+- Animations
+- Blur/glass effects
+- Native navigation behavior
 
-## Decision-Making Principles
-
-When multiple implementations are possible:
-
-1. Prefer the simplest solution that fits the current MVP.
-2. Prefer patterns that make future Supabase migration easier.
-3. Prefer abstractions at infrastructure boundaries, not unnecessary abstractions everywhere.
-4. Avoid premature scaling.
-5. Avoid premature realtime.
-6. Avoid premature backend complexity.
-7. Preserve the ability to replace infrastructure providers later.
-8. Favor maintainability over cleverness.
-9. Do not sacrifice the current working UX for hypothetical future requirements.
-10. Prefer incremental changes over large rewrites.
+Web is not an equivalent test environment for native functionality.
 
 ---
 
-## Current Product Direction
+# 24. CURRENT KNOWN ISSUES / DEBUGGING NOTES
 
-The MVP is intentionally constrained.
+### Google Maps native-vs-Expo-Go distinction
 
-Current priority:
+A minimal standalone Expo test app rendered Google Maps successfully in Expo Go without a custom API key.
+
+The Crave project has a custom `react-native-maps` plugin configuration through `app.config.js` for native Android API-key injection.
+
+If Crave's native build shows a blank/black map while the standalone Expo Go test works:
+
+1. Verify the exact current `MapView` provider configuration.
+2. Verify resolved Expo config.
+3. Verify generated native configuration after prebuild/build.
+4. Inspect native logs.
+5. Do not immediately change unrelated map props, styles, markers, or application architecture.
+
+### Do not infer from historical snippets
+
+Previous versions of Explore used different combinations of:
+
+- `PROVIDER_GOOGLE`
+- `customMapStyle`
+- region initialization
+- marker loading delays
+
+The current file is authoritative.
+
+---
+
+# 25. COMMON PITFALLS
+
+### Do not
+
+- Assume SDK 54 is still active.
+- Assume the old `ExploreScreen.tsx` exists.
+- Assume Google Maps is currently forced on iOS.
+- Assume `customMapStyle` is currently enabled.
+- Assume challenge posts are persisted.
+- Assume the mock DB is persistent.
+- Assume PostContent's VIDEO type means video upload is implemented.
+- Put API keys/secrets into source files or documentation.
+- Add a second current-user system.
+- Bypass repositories when an appropriate repository exists.
+- Add realtime to every social action.
+- Rewrite working screens because an older version looked different.
+- Modify generated native files without first checking whether Expo config can produce the required result.
+
+---
+
+# 26. SAFE CHANGE WORKFLOW FOR AI AGENTS
+
+For a normal coding request:
 
 ```text
-Reliable core experience
-        ↓
-Map-based discovery
-        ↓
-Photo posting
-        ↓
-Social interactions
-        ↓
-Real user adoption
-        ↓
-Production backend
-        ↓
-Scale based on actual usage
+1. Read AGENTS.md
+       ↓
+2. Identify exact target files
+       ↓
+3. Inspect current implementation
+       ↓
+4. Search for existing reusable code
+       ↓
+5. Make the smallest change
+       ↓
+6. Type-check / lint when appropriate
+       ↓
+7. Report exactly what changed
 ```
 
-Do not prematurely optimize for large-scale infrastructure.
-
-The architecture should be scalable enough to evolve, while the implementation should remain appropriately simple for the current MVP stage.
-
-## Current Database Schema
-
-The production database is designed around the following core tables and relationships.
-
-### Core Tables
-
-- `users`
-  - Primary key: `id`
-  - Unique: `username`
-
-- `places`
-  - Primary key: `id`
-
-- `posts`
-  - Primary key: `id`
-  - `author_id` → `users.id`
-  - `place_id` → `places.id`
-
-- `post_contents`
-  - Primary key: `id`
-  - `post_id` → `posts.id`
-
-- `comments`
-  - Primary key: `id`
-  - `post_id` → `posts.id`
-  - `user_id` → `users.id`
-  - `parent_comment_id` → `comments.id`
-  - `parent_comment_id` is used for nested/reply comments
-
-### Social Tables
-
-- `likes`
-  - `user_id` → `users.id`
-  - `post_id` → `posts.id`
-  - Represents a user liking a post
-
-- `follows`
-  - `follower_id` → `users.id`
-  - `following_id` → `users.id`
-  - Represents a user following another user
-
-- `follow_requests`
-  - `requester_id` → `users.id`
-  - `target_user_id` → `users.id`
-  - Represents a follow request
-
-- `mentions`
-  - `user_id` → `users.id`
-  - `post_id` → `posts.id`
-  - Represents a user mentioned in a post
-
-### Location / Map Tables
-
-- `user_locations`
-  - Primary key: `user_id`
-  - `user_id` → `users.id`
-
-- `map_promotions`
-  - Primary key: `id`
-  - `place_id` → `places.id`
-
-### Important Relationships
+For architecture/backend requests:
 
 ```text
-users
- ├── posts ──────────────→ places
- │     └── post_contents
- │
- ├── comments ───────────→ posts
- │     └── parent_comment_id → comments
- │
- ├── likes ───────────────→ posts
- │
- ├── follows ─────────────→ users
- │
- ├── follow_requests ─────→ users
- │
- ├── mentions ────────────→ posts
- │
- └── user_locations
+1. Inspect current models
+2. Inspect repository contracts
+3. Inspect mock implementations
+4. Identify affected UI
+5. Change boundaries deliberately
+6. Keep mock implementation working unless migration is explicitly requested
+```
 
-places
- ├── posts
- └── map_promotions
+For native/Expo requests:
+
+```text
+1. Inspect package.json
+2. Inspect app.json
+3. Inspect app.config.js
+4. Check whether the feature requires native code
+5. Prefer Expo config/plugin changes
+6. Rebuild only when native configuration actually changed
+```
+
+---
+
+# 27. NON-NEGOTIABLE CONSTRAINTS
+
+- Do not replace the mock data layer with ad-hoc screen fixtures.
+- Do not introduce a production backend unless explicitly requested.
+- Do not introduce authentication unless explicitly requested.
+- Do not add video upload infrastructure unless explicitly requested.
+- Do not add unnecessary realtime.
+- Do not add dependencies without justification.
+- Do not upgrade core framework versions casually.
+- Do not redesign UI unless requested.
+- Do not rewrite working architecture unnecessarily.
+- Do not remove repository abstractions for direct backend calls.
+- Do not expose secrets.
+- Do not invent functionality that is only described as future/planned.
+- Do not silently change behavior outside the requested scope.
+
+---
+
+# 28. QUICK CONTEXT — READ THIS IF TOKEN BUDGET IS LIMITED
+
+```text
+APP: Crave — location-based social discovery
+
+STACK:
+Expo 57 / React 19.2.3 / RN 0.86.3 / TS 6 / Expo Router 57 / RN Maps 1.27.2
+
+CURRENT BACKEND:
+In-memory mock DB + repository layer. No production auth/API/storage yet.
+
+MAIN SCREEN:
+app/(tabs)/explore.tsx
+Map + device location + image markers + search + post modal + long-press focus + drawer.
+
+DATA:
+data/mock/db.ts + data/mock/seed.ts
+Repositories in data/repositories/
+Current mock user: user-1
+
+IMPORTANT UI:
+Profile has fixed hero image + scroll blur/glass + badges.
+Leaderboard lives in components/Leaderboard.tsx.
+Challenge creates a local post object but currently only logs it.
+
+MAP:
+react-native-maps 1.27.2.
+Current Explore has Google provider commented out and custom map style commented out.
+Check current source before changing provider/style.
+
+NATIVE GOOGLE CONFIG:
+app.config.js uses react-native-maps plugin + GOOGLE_MAPS_API_KEY.
+Never expose the key.
+Standalone clean Expo Go map test works without custom API key.
+
+BACKEND PLAN:
+Supabase for DB/Auth/Realtime; Cloudflare R2 for media.
+Repositories should remain the boundary.
+
+STYLE:
+Do not redesign unless asked. Reuse existing components/styles/patterns.
+
+WORK STYLE:
+Inspect → reuse → minimal change → validate → concise report.
+```
+
+## Repository Inspection
+
+Do not recursively inspect the entire repository by default.
+
+Ignore generated, dependency, build, cache, and environment directories/files unless the task specifically requires them.
+
+Common exclusions:
+
+- node_modules/
+- .git/
+- .expo/
+- android/.gradle/
+- android/build/
+- android/app/build/
+- ios/Pods/
+- ios/build/
+- dist/
+- build/
+- coverage/
+- .next/
+- .turbo/
+- \*.lock
+- .env\*
+- generated files
+
+Prefer inspecting:
+
+- source files
+- configuration files
+- package manifests
+- database/migration files
+- relevant documentation
+- files directly related to the requested task
+
+Start narrow and expand inspection only when necessary.

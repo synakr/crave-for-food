@@ -1,10 +1,15 @@
 import FloatingTabBar from "@/components/FloatingTabBar";
 import { Tabs } from "expo-router";
+import type { ComponentProps } from "react";
+
+type FloatingTabBarProps = ComponentProps<typeof FloatingTabBar>;
 
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => (
+        <FloatingTabBar {...(props as unknown as FloatingTabBarProps)} />
+      )}
       screenOptions={{
         headerShown: false,
 

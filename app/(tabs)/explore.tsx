@@ -1,21 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { Image, Platform, Pressable, StyleSheet, View } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 
 import ExploreSearchBar from "@/components/ExploreSearchBar";
 import MapPostFocus from "@/components/MapPostFocus";
 import NavigationDrawer from "@/components/NavigationDrawer";
 import FoodPostModal from "@/components/PostModal";
-import mapStyleRedesign from "@/constants/mapStyleRedesign";
 import { seedMockDatabase } from "@/data/mock/seed";
 import { postRepository } from "@/data/repositories";
 import type { ExplorePost } from "@/data/repositories/PostRepository";
@@ -27,8 +19,15 @@ interface MapRegion {
   longitudeDelta: number;
 }
 
+const FALLBACK_REGION: MapRegion = {
+  latitude: 23.5335,
+  longitude: 91.4845,
+  latitudeDelta: 0.03,
+  longitudeDelta: 0.03,
+};
+
 export default function HomeScreen() {
-  const [region, setRegion] = useState<MapRegion | null>(null);
+  const [region, setRegion] = useState<MapRegion>(FALLBACK_REGION);
   const [selectedPost, setSelectedPost] = useState<ExplorePost | null>(null);
 
   // Focused post for long-press interaction
@@ -123,33 +122,22 @@ export default function HomeScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        setRegion({
-          latitude: 23.5335,
-          longitude: 91.4845,
-          latitudeDelta: 0.03,
-          longitudeDelta: 0.03,
-        });
-
         return;
       }
 
       const location = await Location.getCurrentPositionAsync({});
 
-      setRegion({
+      const userRegion: MapRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
-      });
+      };
+
+      setRegion(userRegion);
+      mapRef.current?.animateToRegion(userRegion, 600);
     } catch (error) {
       console.log("Failed to get location:", error);
-
-      setRegion({
-        latitude: 23.5335,
-        longitude: 91.4845,
-        latitudeDelta: 0.03,
-        longitudeDelta: 0.03,
-      });
     }
   }, []);
 
@@ -162,7 +150,7 @@ export default function HomeScreen() {
   ========================= */
 
   const handleMarkerImageLoad = useCallback((postId: string) => {
-    const delay = Platform.OS === "android" ? 120 : 0;
+    const delay = Platform.OS === "android" ? 250 : 0;
 
     setTimeout(() => {
       setLoadedMarkers((previous) => {
@@ -185,6 +173,33 @@ export default function HomeScreen() {
   const handleMarkerPress = useCallback((post: ExplorePost) => {
     Image.prefetch(post.image);
     setSelectedPost(post);
+  }, []);
+
+  const focusPost = useCallback(async (post: ExplorePost) => {
+    if (!mapRef.current) {
+      return;
+    }
+
+    try {
+      const point = await mapRef.current.pointForCoordinate({
+        latitude: post.latitude,
+        longitude: post.longitude,
+      });
+
+      setFocusOrigin({
+        x: point.x,
+        y: point.y,
+      });
+    } catch (error) {
+      console.log("Failed to calculate marker position:", error);
+
+      setFocusOrigin({
+        x: 0,
+        y: 0,
+      });
+    }
+
+    setFocusedPost(post);
   }, []);
 
   /* =========================
@@ -220,52 +235,36 @@ export default function HomeScreen() {
 
   const handleMapLongPress = useCallback(
     async (latitude: number, longitude: number) => {
-      const MARKER_RADIUS = 0.0008;
-
-      const nearbyPost = posts.find((post) => {
-        const latitudeDifference = Math.abs(post.latitude - latitude);
-
-        const longitudeDifference = Math.abs(post.longitude - longitude);
-
-        return (
-          latitudeDifference < MARKER_RADIUS &&
-          longitudeDifference < MARKER_RADIUS
-        );
-      });
-
-      if (!nearbyPost || !mapRef.current) {
+      if (!posts.length || !mapRef.current) {
         return;
       }
 
-      try {
-        /*
-         * Convert the selected post's geographic coordinate
-         * into its actual screen position.
-         */
-        const point = await mapRef.current.pointForCoordinate({
-          latitude: nearbyPost.latitude,
-          longitude: nearbyPost.longitude,
-        });
+      const nearbyPost = posts.reduce<{
+        post: ExplorePost;
+        distance: number;
+      } | null>((closest, post) => {
+        const latDiff = post.latitude - latitude;
+        const lonDiff = post.longitude - longitude;
 
-        setFocusOrigin({
-          x: point.x,
-          y: point.y,
-        });
+        const distance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
 
-        setFocusedPost(nearbyPost);
-      } catch (error) {
-        console.log("Failed to calculate marker position:", error);
+        if (!closest || distance < closest.distance) {
+          return {
+            post,
+            distance,
+          };
+        }
 
-        // Fallback: still open the focus UI.
-        setFocusOrigin({
-          x: 0,
-          y: 0,
-        });
+        return closest;
+      }, null);
 
-        setFocusedPost(nearbyPost);
+      if (!nearbyPost) {
+        return;
       }
+
+      await focusPost(nearbyPost.post);
     },
-    [posts],
+    [focusPost, posts],
   );
 
   /* =========================
@@ -308,14 +307,6 @@ export default function HomeScreen() {
      LOADING
   ========================= */
 
-  if (!region) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       {/* =========================
@@ -324,14 +315,14 @@ export default function HomeScreen() {
 
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        style={StyleSheet.absoluteFillObject}
+        // provider={PROVIDER_GOOGLE}
+        style={StyleSheet.absoluteFill}
         initialRegion={region}
         mapType="standard"
         showsUserLocation
         showsCompass={false}
         showsScale={false}
-        customMapStyle={mapStyleRedesign}
+        // customMapStyle={mapStyle}
         showsBuildings
         showsTraffic={false}
         showsIndoors={false}
@@ -361,15 +352,17 @@ export default function HomeScreen() {
             }}
             tracksViewChanges={!loadedMarkers.has(post.id)}
             onPress={() => handleMarkerPress(post)}>
-            <Image
-              source={{
-                uri: post.image,
-              }}
-              style={styles.markerImage}
-              resizeMode="cover"
-              fadeDuration={0}
-              onLoadEnd={() => handleMarkerImageLoad(post.id)}
-            />
+            <Pressable onLongPress={() => focusPost(post)} delayLongPress={500}>
+              <Image
+                source={{
+                  uri: post.image,
+                }}
+                style={styles.markerImage}
+                resizeMode="cover"
+                fadeDuration={0}
+                onLoad={() => handleMarkerImageLoad(post.id)}
+              />
+            </Pressable>
           </Marker>
         ))}
       </MapView>

@@ -1,4 +1,4 @@
-import React, {
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   },
 
   fakeMap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#DED8D0",
   },
 
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
      ========================================================= */
 
   mapSkeleton: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#D3CCC3",
   },
 
@@ -990,14 +990,14 @@ const styles = StyleSheet.create({
   },
 
   postImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
 
     width: "100%",
     height: "100%",
   },
 
   imageSkeleton: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
 
     backgroundColor: "#403831",
 
@@ -1027,7 +1027,7 @@ const styles = StyleSheet.create({
   },
 
   imageError: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
 
     alignItems: "center",
     justifyContent: "center",
@@ -1062,7 +1062,7 @@ const styles = StyleSheet.create({
   },
 
   imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
 
     backgroundColor: "rgba(11,8,7,0.30)",
   },

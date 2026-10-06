@@ -1,5 +1,5 @@
 import { BlurView } from "expo-blur";
-import React, { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -324,14 +324,14 @@ export default memo(PostModal);
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1000,
   },
 
   backdropDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
 

@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import React, { useEffect, useRef, useState } from "react";
+import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -133,7 +134,7 @@ export default function NavigationDrawer({
         <Pressable
           onPress={() => {
             onClose();
-            onChallengePress?.();
+            router.push("/challenge");
           }}
           style={({ pressed }) => [
             styles.challengeCard,
@@ -161,6 +162,15 @@ export default function NavigationDrawer({
           <MenuItem icon="bookmark-outline" label="Saved" />
 
           <MenuItem icon="heart-outline" label="Activity" />
+
+          <MenuItem
+            icon="podium-outline"
+            label="Leaderboard"
+            onPress={() => {
+              onClose();
+              router.push("/leaderboard");
+            }}
+          />
         </View>
 
         {/* Divider */}
@@ -187,14 +197,17 @@ export default function NavigationDrawer({
 function MenuItem({
   icon,
   label,
-  active = false,
+  active,
+  onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   active?: boolean;
+  onPress?: () => void;
 }) {
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.menuItem,
         active && styles.menuItemActive,
@@ -215,16 +228,16 @@ function MenuItem({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
   },
 
   backdropContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.22)",
   },
 
