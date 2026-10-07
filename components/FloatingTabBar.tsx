@@ -1,7 +1,7 @@
+import CreateActionButton from "@/components/CreateActionButton";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
-import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import {
   Dimensions,
@@ -11,7 +11,6 @@ import {
   Text,
   View,
 } from "react-native";
-
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
@@ -22,9 +21,9 @@ import Animated, {
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const TAB_BAR_HEIGHT = 58;
-const PLUS_SIZE = 58;
 const HORIZONTAL_MARGIN = 20;
 const PLUS_GAP = 12;
+const PLUS_SIZE = 58;
 
 export default function FloatingTabBar({
   state,
@@ -35,7 +34,10 @@ export default function FloatingTabBar({
 
   const tabWidth = barWidth / state.routes.length;
 
-  // Active tab sliding animation
+  /* ================================================================
+     ACTIVE TAB INDICATOR
+  ================================================================ */
+
   const indicatorX = useSharedValue(5);
 
   React.useEffect(() => {
@@ -51,40 +53,23 @@ export default function FloatingTabBar({
     transform: [{ translateX: indicatorX.value }],
   }));
 
-  // Open image picker
-  const handleUpload = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.7,
-    });
-
-    if (result.canceled) {
-      return;
-    }
-
-    const image = result.assets[0];
-
-    navigation.navigate("explore", {
-      uploadedImage: image.uri,
-      uploadId: Date.now().toString(),
-    });
-  };
+  /* ================================================================
+     RENDER
+  ================================================================ */
 
   return (
     <View style={styles.wrapper}>
-      {/* TAB BAR */}
+      {/* ============================================================
+          TAB BAR
+      ============================================================ */}
+
       <View style={[styles.barContainer, { width: barWidth }]}>
         <BlurView
           intensity={Platform.OS === "ios" ? 55 : 40}
           tint="light"
           style={styles.tabBar}>
           {/* Active tab indicator */}
+
           <Animated.View
             pointerEvents="none"
             style={[
@@ -97,6 +82,7 @@ export default function FloatingTabBar({
           />
 
           {/* Tabs */}
+
           {state.routes.map((route) => {
             const focused = state.index === state.routes.indexOf(route);
 
@@ -158,53 +144,30 @@ export default function FloatingTabBar({
         </BlurView>
       </View>
 
-      {/* PLUS / UPLOAD BUTTON */}
-      <Pressable
-        onPress={handleUpload}
-        style={({ pressed }) => [
-          styles.plusButton,
-          pressed && styles.plusPressed,
-        ]}>
-        <Ionicons name="add" size={32} color="#FFFFFF" />
-      </Pressable>
+      <CreateActionButton navigation={navigation} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  /* ================================
-     WRAPPER
-  ================================= */
-
   wrapper: {
     position: "absolute",
-
     left: HORIZONTAL_MARGIN,
     right: HORIZONTAL_MARGIN,
     bottom: 16,
-
     height: TAB_BAR_HEIGHT,
-
     flexDirection: "row",
     alignItems: "center",
-
     gap: PLUS_GAP,
   },
-
-  /* ================================
-     TAB BAR
-  ================================= */
 
   barContainer: {
     height: TAB_BAR_HEIGHT,
     borderRadius: TAB_BAR_HEIGHT / 2,
     overflow: "hidden",
-
     backgroundColor: "rgba(255,255,255,0.72)",
-
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.8)",
-
     ...(Platform.OS === "android" && {
       elevation: 2,
       shadowColor: "#000",
@@ -219,53 +182,31 @@ const styles = StyleSheet.create({
 
   tabBar: {
     flex: 1,
-
     height: TAB_BAR_HEIGHT,
-
     flexDirection: "row",
     alignItems: "center",
-
     overflow: "hidden",
-
     backgroundColor: "rgba(255,255,255,0.45)",
   },
 
-  /* ================================
-     ACTIVE TAB
-  ================================= */
-
   activeIndicator: {
     position: "absolute",
-
     left: -1,
     top: 4,
-
     height: TAB_BAR_HEIGHT - 10,
-
     borderRadius: (TAB_BAR_HEIGHT - 10) / 2,
-
     backgroundColor: "rgba(235,235,238,0.75)",
-
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.65)",
-
-    // Only shadow in the component
     shadowColor: "#000",
-
     shadowOffset: {
       width: 0,
       height: 2,
     },
-
     shadowOpacity: 0.08,
     shadowRadius: 4,
-
     elevation: 2,
   },
-
-  /* ================================
-     TAB ITEM
-  ================================= */
 
   tabItem: {
     flex: 1,
@@ -291,45 +232,5 @@ const styles = StyleSheet.create({
     color: "#111",
 
     fontWeight: "600",
-  },
-
-  /* ================================
-   PLUS BUTTON
-================================= */
-
-  plusButton: {
-    width: PLUS_SIZE,
-    height: PLUS_SIZE,
-
-    borderRadius: PLUS_SIZE / 2,
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    // Dark circle
-    backgroundColor: "#040404",
-
-    // White border
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
-
-    // Shadow
-    ...(Platform.OS === "android"
-      ? {
-          elevation: 5,
-        }
-      : {
-          shadowColor: "#000",
-          shadowOffset: {
-            width: 0,
-            height: 4,
-          },
-          shadowOpacity: 0.18,
-          shadowRadius: 6,
-        }),
-  },
-
-  plusPressed: {
-    transform: [{ scale: 0.94 }],
   },
 });
