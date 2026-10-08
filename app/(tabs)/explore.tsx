@@ -1,9 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image, Platform, Pressable, StyleSheet, View } from "react-native";
+import {
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
+import CreatedEventPostModal from "@/components/CreatedEventPostModal";
 import ExploreSearchBar from "@/components/ExploreSearchBar";
 import MapPostFocus from "@/components/MapPostFocus";
 import NavigationDrawer from "@/components/NavigationDrawer";
@@ -11,6 +19,13 @@ import FoodPostModal from "@/components/PostModal";
 import { seedMockDatabase } from "@/data/mock/seed";
 import { postRepository } from "@/data/repositories";
 import type { ExplorePost } from "@/data/repositories/PostRepository";
+
+import {
+  getCreatedPosts,
+  subscribeToCreatedPosts,
+} from "@/data/mock/createdPostStore";
+
+import type { CreatedEventPost } from "@/data/mock/createdPostStore";
 
 interface MapRegion {
   latitude: number;
@@ -82,6 +97,19 @@ export default function HomeScreen() {
     },
     [focusedIndex, focusedPost, posts],
   );
+
+  // For event post
+  const [createdPosts, setCreatedPosts] =
+    useState<CreatedEventPost[]>(getCreatedPosts());
+
+  const [selectedCreatedPost, setSelectedCreatedPost] =
+    useState<CreatedEventPost | null>(null);
+
+  useEffect(() => {
+    return subscribeToCreatedPosts(() => {
+      setCreatedPosts(getCreatedPosts());
+    });
+  }, []);
 
   /* =========================
      LOAD POSTS
@@ -365,6 +393,27 @@ export default function HomeScreen() {
             </Pressable>
           </Marker>
         ))}
+
+        {/* event post marker */}
+        {createdPosts.map((post) => (
+          <Marker
+            key={post.id}
+            coordinate={{
+              latitude: post.latitude,
+              longitude: post.longitude,
+            }}
+            anchor={{
+              x: 0.5,
+              y: 1,
+            }}
+            onPress={() => setSelectedCreatedPost(post)}>
+            <View style={styles.createdMarker}>
+              <Text style={styles.createdMarkerText} numberOfLines={2}>
+                {post.title}
+              </Text>
+            </View>
+          </Marker>
+        ))}
       </MapView>
 
       {/* =========================
@@ -407,6 +456,13 @@ export default function HomeScreen() {
         <FoodPostModal
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
+        />
+      )}
+
+      {selectedCreatedPost && (
+        <CreatedEventPostModal
+          post={selectedCreatedPost}
+          onClose={() => setSelectedCreatedPost(null)}
         />
       )}
 
@@ -475,5 +531,33 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
 
     elevation: 10,
+  },
+
+  // evern marker
+  createdMarker: {
+    maxWidth: 170,
+    minWidth: 90,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#111111",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+
+  createdMarkerText: {
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: "700",
+    color: "#111111",
+    textAlign: "center",
   },
 });
