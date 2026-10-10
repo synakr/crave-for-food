@@ -1,24 +1,17 @@
 export type CreatedEventPost = {
   id: string;
-
   category: string;
   title: string;
   description: string;
-
   date: string;
   startTime: string;
   endTime: string;
-
   location: string;
   audience: string;
-
   imageUri: string | null;
-
   latitude: number;
   longitude: number;
-
   createdAt: string;
-
   likes: number;
   comments: number;
   interested: number;
@@ -111,16 +104,15 @@ const posts: CreatedEventPost[] = [
 const listeners = new Set<() => void>();
 
 function notify() {
-  listeners.forEach((listener) => listener());
+  [...listeners].forEach((listener) => listener());
 }
 
-export function getCreatedPosts() {
+export function getCreatedPosts(): CreatedEventPost[] {
   return [...posts];
 }
 
 export function subscribeToCreatedPosts(listener: () => void) {
   listeners.add(listener);
-
   return () => {
     listeners.delete(listener);
   };
@@ -137,27 +129,22 @@ export function addCreatedPost(
     | "comments"
     | "interested"
   >,
-) {
+): CreatedEventPost {
   const latitudeOffset = (Math.random() - 0.5) * 0.008;
-
   const longitudeOffset = (Math.random() - 0.5) * 0.008;
 
   const createdPost: CreatedEventPost = {
     ...post,
-
     id: `created-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-
     latitude: NIT_AGARTALA.latitude + latitudeOffset,
-
     longitude: NIT_AGARTALA.longitude + longitudeOffset,
-
     createdAt: new Date().toISOString(),
-
     likes: 0,
     comments: 0,
     interested: 0,
   };
 
+  // Preserve all existing posts.
   posts.unshift(createdPost);
 
   notify();

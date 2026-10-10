@@ -17,6 +17,11 @@ export interface ExplorePost extends Post {
   likes: number;
 }
 
+export interface CreatePostInput {
+  post: Post;
+  contents: PostContent[];
+}
+
 export interface PostRepository {
   getPosts(): Promise<Post[]>;
 
@@ -27,6 +32,9 @@ export interface PostRepository {
   getExplorePosts(): Promise<ExplorePost[]>;
 
   createPost(post: Post): Promise<Post>;
+
+  /** Creates a post and its content together. */
+  createPostWithContents(input: CreatePostInput): Promise<Post>;
 
   updatePost(post: Post): Promise<Post>;
 

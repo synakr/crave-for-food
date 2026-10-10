@@ -10,7 +10,7 @@ import {
     View,
 } from "react-native";
 
-import type { CreatedEventPost } from "@/data/mock/createdPostStore";
+import type { CreatedEventPost } from "@/data/mock/eventPostStore";
 
 type Props = {
   post: CreatedEventPost;

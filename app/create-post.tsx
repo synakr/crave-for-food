@@ -1,739 +1,338 @@
-import { addCreatedPost } from "@/data/mock/createdPostStore";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-type EventCategory = "Meetup" | "Sports" | "Community" | "Other";
 
-const CATEGORIES: {
-  type: EventCategory;
+import {
+  ArticleComposer,
+  CaptionComposer,
+  EventComposer,
+  GigComposer,
+} from "@/components/PostComposer";
+import type {
+  ComposerPostType,
+  PostDraft,
+} from "@/components/PostComposer/types";
+import { addArticlePost } from "@/data/mock/articlePostStore";
+import { addCreatedPost } from "@/data/mock/eventPostStore";
+import { addGigPost } from "@/data/mock/gigPostStore";
+import { addTextPost } from "@/data/mock/textPostStore";
+import type { Post } from "@/data/models/Post";
+import type { PostContent } from "@/data/models/PostContent";
+import { postRepository } from "@/data/repositories";
+import { getRandomLocation } from "@/utils/randomLocation";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const POST_TYPES: {
+  type: ComposerPostType;
+  title: string;
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
   {
-    type: "Meetup",
-    icon: "people-outline",
+    type: "CAPTION",
+    title: "Text",
+    icon: "chatbubble-ellipses-outline",
   },
   {
-    type: "Sports",
-    icon: "football-outline",
+    type: "EVENT",
+    title: "Event",
+    icon: "calendar-outline",
   },
   {
-    type: "Community",
-    icon: "leaf-outline",
+    type: "GIG",
+    title: "Gig",
+    icon: "briefcase-outline",
   },
   {
-    type: "Other",
-    icon: "ellipsis-horizontal",
+    type: "ARTICLE",
+    title: "Article",
+    icon: "book-outline",
   },
 ];
 
-const AUDIENCES = ["Open to everyone", "Friends only"];
+function createId() {
+  return `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
-export default function CreateTaskScreen() {
-  const [category, setCategory] = useState<EventCategory>("Meetup");
+export default function CreatePostScreen() {
+  const [selectedType, setSelectedType] = useState<ComposerPostType>("CAPTION");
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const handleSubmit = async (draft: PostDraft) => {
+    if (submitting) return;
 
-  const [location, setLocation] = useState("");
+    setSubmitting(true);
 
-  const [audience, setAudience] = useState("Open to everyone");
+    try {
+      const now = new Date().toISOString();
+      const postId = createId();
 
-  const [imageUri, setImageUri] = useState<string | null>(null);
+      const post: Post = {
+        id: postId,
+        author_id: "user-1",
+        place_id: null,
+        post_type: draft.type,
+        caption: draft.caption ?? null,
+        view_count: 0,
+        like_count: 0,
+        comment_count: 0,
+        expires_at: null,
+        created_at: now,
+        updated_at: now,
+      };
 
-  /* -------------------------------------------------------------------------- */
-  /* Image                                                                      */
-  /* -------------------------------------------------------------------------- */
+      const metadata: Record<string, unknown> = {
+        ...(draft.metadata ?? {}),
+      };
 
-  const handlePickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (draft.title) {
+        metadata.title = draft.title;
+      }
 
-    if (!permission.granted) {
-      Alert.alert(
-        "Permission required",
-        "Please allow photo library access to add an image.",
-      );
-      return;
-    }
+      if (draft.body) {
+        metadata.body = draft.body;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.9,
-    });
+      const contents: PostContent[] = [];
 
-    if (result.canceled) {
-      return;
-    }
+      if (draft.mediaUri) {
+        contents.push({
+          id: `${postId}-media`,
+          post_id: postId,
+          type: draft.mediaKind ?? "IMAGE",
+          storage_key: draft.mediaUri,
+          text_content: null,
+          metadata: null,
+          content_order: 0,
+          created_at: now,
+        });
+      }
 
-    const uri = result.assets[0]?.uri;
+      const textContent =
+        draft.type === "ARTICLE" ? draft.body : (draft.caption ?? null);
 
-    if (uri) {
-      setImageUri(uri);
+      if (
+        textContent ||
+        draft.type !== "MEDIA" ||
+        Object.keys(metadata).length > 0
+      ) {
+        contents.push({
+          id: `${postId}-text`,
+          post_id: postId,
+          type: "TEXT",
+          storage_key: null,
+          text_content: textContent ?? null,
+          metadata: Object.keys(metadata).length > 0 ? metadata : null,
+          content_order: contents.length,
+          created_at: now,
+        });
+      }
+
+      await postRepository.createPostWithContents({
+        post,
+        contents,
+      });
+
+      // hardcoded location for now for caption based post
+      if (draft.type === "CAPTION" && draft.caption?.trim()) {
+        addTextPost({
+          id: postId,
+          text: draft.caption.trim(),
+          ...getRandomLocation(23.8328, 91.274),
+        });
+      }
+
+      // hardcoded location for now for article based post
+      if (
+        draft.type === "ARTICLE" &&
+        draft.title?.trim() &&
+        draft.body?.trim()
+      ) {
+        addArticlePost({
+          id: postId,
+          title: draft.title.trim(),
+          body: draft.body.trim(),
+          articleType: String(draft.metadata?.articleType ?? "Article"),
+          ...getRandomLocation(23.84251, 91.42521),
+        });
+      }
+
+      // event based post
+      if (draft.type === "EVENT") {
+        const metadata = draft.metadata ?? {};
+
+        addCreatedPost({
+          title: draft.title?.trim() ?? "Untitled Event",
+          description: draft.caption?.trim() ?? "",
+          category: String(metadata.category ?? "Meetup"),
+          date: String(metadata.date ?? ""),
+          startTime: String(metadata.startTime ?? ""),
+          endTime: String(metadata.endTime ?? ""),
+          location: String(metadata.location ?? ""),
+          audience: "Everyone",
+          imageUri: draft.mediaUri ?? null,
+        });
+      }
+
+      // hardcoded gig post
+      if (draft.type === "GIG") {
+        const metadata = draft.metadata ?? {};
+
+        addGigPost({
+          title: draft.title?.trim() ?? "Untitled Gig",
+          description: draft.caption?.trim() ?? "",
+          gigType: String(metadata.gigType ?? "Offer"),
+          location: String(metadata.location ?? ""),
+          contact: metadata.contact ? String(metadata.contact) : null,
+        });
+      }
+
+      Alert.alert("Post created", "Your post has been saved.");
+      router.back();
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      Alert.alert("Couldn't create post", "Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const removeImage = () => {
-    setImageUri(null);
+  const composerProps = {
+    onSubmit: handleSubmit,
+    onCancel: () => router.back(),
+    submitting,
   };
-
-  /* -------------------------------------------------------------------------- */
-  /* Create                                                                     */
-  /* -------------------------------------------------------------------------- */
-
-  const handleCreate = () => {
-    const trimmedTitle = title.trim();
-    const trimmedDescription = description.trim();
-    const trimmedLocation = location.trim();
-
-    if (!trimmedTitle) {
-      Alert.alert("Missing title", "Give your event a title.");
-      return;
-    }
-
-    if (!trimmedDescription) {
-      Alert.alert("Missing description", "Add some details about the event.");
-      return;
-    }
-
-    if (!date) {
-      Alert.alert("Missing date", "Add a date for the event.");
-      return;
-    }
-
-    if (!startTime || !endTime) {
-      Alert.alert("Missing time", "Add a start and end time.");
-      return;
-    }
-
-    if (!trimmedLocation) {
-      Alert.alert("Missing location", "Add a location.");
-      return;
-    }
-
-    addCreatedPost({
-      category,
-      title: trimmedTitle,
-      description: trimmedDescription,
-      date,
-      startTime,
-      endTime,
-      location: trimmedLocation,
-      audience,
-      imageUri,
-    });
-
-    router.back();
-  };
-
-  const canCreate =
-    title.trim().length > 0 &&
-    description.trim().length > 0 &&
-    date.trim().length > 0 &&
-    startTime.trim().length > 0 &&
-    endTime.trim().length > 0 &&
-    location.trim().length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        {/* ------------------------------------------------------------------ */}
-        {/* Header                                                             */}
-        {/* ------------------------------------------------------------------ */}
-
-        <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="close" size={24} color="#111111" />
-          </Pressable>
-
-          <Text style={styles.headerTitle}>Create Meetup</Text>
-
-          <View style={styles.headerSpacer} />
-        </View>
+      {/* Category chips */}
+      <View style={styles.categorySection}>
+        <Text style={styles.categoryLabel}>CREATE SOMETHING</Text>
 
         <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
-          {/* ---------------------------------------------------------------- */}
-          {/* Category                                                         */}
-          {/* ---------------------------------------------------------------- */}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryList}
+          keyboardShouldPersistTaps="handled">
+          {POST_TYPES.map((item) => {
+            const selected = selectedType === item.type;
 
-          <Text style={styles.sectionLabel}>Category</Text>
+            return (
+              <Pressable
+                key={item.type}
+                onPress={() => setSelectedType(item.type)}
+                accessibilityRole="button"
+                accessibilityLabel={`Create ${item.title} post`}
+                accessibilityState={{ selected }}
+                style={({ pressed }) => [
+                  styles.categoryChip,
+                  selected && styles.categoryChipSelected,
+                  pressed && styles.categoryChipPressed,
+                ]}>
+                <Ionicons
+                  name={item.icon}
+                  size={17}
+                  color={selected ? "#FFFFFF" : "#74675D"}
+                />
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryRow}>
-            {CATEGORIES.map((item) => {
-              const active = category === item.type;
-
-              return (
-                <Pressable
-                  key={item.type}
+                <Text
                   style={[
-                    styles.categoryButton,
-                    active && styles.categoryButtonActive,
-                  ]}
-                  onPress={() => setCategory(item.type)}>
-                  <Ionicons
-                    name={item.icon}
-                    size={18}
-                    color={active ? "#FFFFFF" : "#666666"}
-                  />
-
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      active && styles.categoryTextActive,
-                    ]}>
-                    {item.type}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Optional Image                                                  */}
-          {/* ---------------------------------------------------------------- */}
-
-          <Text style={styles.sectionLabel}>
-            Cover photo
-            <Text style={styles.optional}> · Optional</Text>
-          </Text>
-
-          {!imageUri ? (
-            <Pressable style={styles.imagePicker} onPress={handlePickImage}>
-              <View style={styles.imagePickerIcon}>
-                <Ionicons name="image-outline" size={25} color="#555555" />
-              </View>
-
-              <View style={styles.imagePickerText}>
-                <Text style={styles.imagePickerTitle}>Add a photo</Text>
-
-                <Text style={styles.imagePickerSubtitle}>
-                  Make your event stand out
+                    styles.categoryText,
+                    selected && styles.categoryTextSelected,
+                  ]}>
+                  {item.title}
                 </Text>
-              </View>
-
-              <Ionicons name="chevron-forward" size={19} color="#999999" />
-            </Pressable>
-          ) : (
-            <View style={styles.imagePreviewContainer}>
-              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-
-              <View style={styles.imagePreviewOverlay}>
-                <Pressable style={styles.imageAction} onPress={handlePickImage}>
-                  <Ionicons name="image-outline" size={18} color="#FFFFFF" />
-
-                  <Text style={styles.imageActionText}>Change</Text>
-                </Pressable>
-
-                <Pressable style={styles.imageAction} onPress={removeImage}>
-                  <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Title                                                            */}
-          {/* ---------------------------------------------------------------- */}
-
-          <Text style={styles.sectionLabel}>Title</Text>
-
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="e.g. Let's play cricket!"
-            placeholderTextColor="#999999"
-            style={styles.titleInput}
-            maxLength={100}
-          />
-
-          <Text style={styles.characterCount}>{title.length}/100</Text>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Description                                                      */}
-          {/* ---------------------------------------------------------------- */}
-
-          <Text style={styles.sectionLabel}>Description</Text>
-
-          <View style={styles.descriptionContainer}>
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Tell people what this is about..."
-              placeholderTextColor="#999999"
-              multiline
-              textAlignVertical="top"
-              maxLength={1000}
-              style={styles.descriptionInput}
-            />
-
-            <Text style={styles.descriptionCharacterCount}>
-              {description.length}/1000
-            </Text>
-          </View>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Date                                                             */}
-          {/* ---------------------------------------------------------------- */}
-
-          <Text style={styles.sectionLabel}>Date</Text>
-
-          <View style={styles.inputWithIcon}>
-            <Ionicons name="calendar-outline" size={20} color="#666666" />
-
-            <TextInput
-              value={date}
-              onChangeText={setDate}
-              placeholder="e.g. Sat, 12 Oct 2026"
-              placeholderTextColor="#999999"
-              style={styles.iconInput}
-            />
-          </View>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Time                                                             */}
-          {/* ---------------------------------------------------------------- */}
-
-          <Text style={styles.sectionLabel}>Time</Text>
-
-          <View style={styles.timeRow}>
-            <View style={[styles.inputWithIcon, styles.timeInput]}>
-              <Ionicons name="time-outline" size={20} color="#666666" />
-
-              <TextInput
-                value={startTime}
-                onChangeText={setStartTime}
-                placeholder="4:00 PM"
-                placeholderTextColor="#999999"
-                style={styles.iconInput}
-              />
-            </View>
-
-            <Text style={styles.timeSeparator}>—</Text>
-
-            <View style={[styles.inputWithIcon, styles.timeInput]}>
-              <Ionicons name="time-outline" size={20} color="#666666" />
-
-              <TextInput
-                value={endTime}
-                onChangeText={setEndTime}
-                placeholder="7:00 PM"
-                placeholderTextColor="#999999"
-                style={styles.iconInput}
-              />
-            </View>
-          </View>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Location                                                         */}
-          {/* ---------------------------------------------------------------- */}
-
-          <Text style={styles.sectionLabel}>Location</Text>
-
-          <View style={styles.inputWithIcon}>
-            <Ionicons name="location-outline" size={20} color="#666666" />
-
-            <TextInput
-              value={location}
-              onChangeText={setLocation}
-              placeholder="e.g. Fateh Sagar Ground, Udaipur"
-              placeholderTextColor="#999999"
-              style={styles.iconInput}
-            />
-          </View>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Audience                                                         */}
-          {/* ---------------------------------------------------------------- */}
-
-          <Text style={styles.sectionLabel}>Who can join?</Text>
-
-          <View style={styles.audienceRow}>
-            {AUDIENCES.map((item) => {
-              const active = audience === item;
-
-              return (
-                <Pressable
-                  key={item}
-                  style={[
-                    styles.audienceButton,
-                    active && styles.audienceButtonActive,
-                  ]}
-                  onPress={() => setAudience(item)}>
-                  <Ionicons
-                    name={
-                      item === "Open to everyone"
-                        ? "people-outline"
-                        : "people-circle-outline"
-                    }
-                    size={19}
-                    color={active ? "#FFFFFF" : "#555555"}
-                  />
-
-                  <Text
-                    style={[
-                      styles.audienceText,
-                      active && styles.audienceTextActive,
-                    ]}>
-                    {item}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Bottom spacing */}
-          <View style={styles.bottomSpace} />
+              </Pressable>
+            );
+          })}
         </ScrollView>
+      </View>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Create                                                             */}
-        {/* ------------------------------------------------------------------ */}
+      {/* Selected composer */}
+      <View style={styles.composerContainer}>
+        {selectedType === "CAPTION" && <CaptionComposer {...composerProps} />}
 
-        <View style={styles.footer}>
-          <Pressable
-            style={[
-              styles.createButton,
-              !canCreate && styles.createButtonDisabled,
-            ]}
-            onPress={handleCreate}
-            disabled={!canCreate}>
-            <Ionicons name="sparkles-outline" size={20} color="#FFFFFF" />
+        {selectedType === "EVENT" && <EventComposer {...composerProps} />}
 
-            <Text style={styles.createButtonText}>Create Meetup</Text>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+        {selectedType === "GIG" && <GigComposer {...composerProps} />}
+
+        {selectedType === "ARTICLE" && <ArticleComposer {...composerProps} />}
+      </View>
     </SafeAreaView>
   );
 }
 
-/* ========================================================================== */
-/* Styles                                                                     */
-/* ========================================================================== */
-
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-
   container: {
     flex: 1,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: "#F8F6F3",
   },
 
-  header: {
-    height: 62,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
+  categorySection: {
+    paddingTop: 14,
+    paddingBottom: 12,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#EEEEEE",
+    borderBottomColor: "#ECE8E4",
   },
 
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F3F3F3",
+  categoryLabel: {
+    marginHorizontal: 16,
+    marginBottom: 11,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    color: "#968A80",
   },
 
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111111",
-  },
-
-  headerSpacer: {
-    width: 40,
-  },
-
-  scrollContent: {
-    padding: 16,
-  },
-
-  sectionLabel: {
-    marginTop: 20,
-    marginBottom: 9,
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#222222",
-  },
-
-  optional: {
-    fontWeight: "400",
-    color: "#999999",
-  },
-
-  categoryRow: {
+  categoryList: {
+    paddingHorizontal: 16,
     gap: 9,
   },
 
-  categoryButton: {
+  categoryChip: {
+    minHeight: 40,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
     borderRadius: 22,
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E4E4E4",
+    borderColor: "#E7E0D9",
+    backgroundColor: "#FFFFFF",
   },
 
-  categoryButtonActive: {
-    backgroundColor: "#111111",
-    borderColor: "#111111",
+  categoryChipSelected: {
+    backgroundColor: "#725B4D",
+    borderColor: "#725B4D",
+  },
+
+  categoryChipPressed: {
+    opacity: 0.75,
   },
 
   categoryText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666666",
-  },
-
-  categoryTextActive: {
-    color: "#FFFFFF",
-  },
-
-  imagePicker: {
-    minHeight: 78,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-
-  imagePickerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F1F1F1",
-  },
-
-  imagePickerText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-
-  imagePickerTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#222222",
-  },
-
-  imagePickerSubtitle: {
-    marginTop: 3,
-    fontSize: 12,
-    color: "#999999",
-  },
-
-  imagePreviewContainer: {
-    height: 210,
-    overflow: "hidden",
-    borderRadius: 18,
-    backgroundColor: "#E5E5E5",
-  },
-
-  imagePreview: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-
-  imagePreviewOverlay: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  imageAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.65)",
-  },
-
-  imageActionText: {
-    color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "600",
+    color: "#74675D",
   },
 
-  titleInput: {
-    minHeight: 52,
-    paddingHorizontal: 15,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E4E4E4",
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#111111",
-  },
-
-  characterCount: {
-    alignSelf: "flex-end",
-    marginTop: 5,
-    fontSize: 11,
-    color: "#999999",
-  },
-
-  descriptionContainer: {
-    minHeight: 145,
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E4E4E4",
-  },
-
-  descriptionInput: {
-    flex: 1,
-    minHeight: 105,
-    fontSize: 15,
-    lineHeight: 23,
-    color: "#111111",
-  },
-
-  descriptionCharacterCount: {
-    alignSelf: "flex-end",
-    fontSize: 11,
-    color: "#999999",
-  },
-
-  inputWithIcon: {
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E4E4E4",
-  },
-
-  iconInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#111111",
-  },
-
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  timeInput: {
-    flex: 1,
-  },
-
-  timeSeparator: {
-    fontSize: 18,
-    color: "#888888",
-  },
-
-  audienceRow: {
-    gap: 9,
-  },
-
-  audienceButton: {
-    minHeight: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E4E4E4",
-  },
-
-  audienceButtonActive: {
-    backgroundColor: "#111111",
-    borderColor: "#111111",
-  },
-
-  audienceText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#555555",
-  },
-
-  audienceTextActive: {
+  categoryTextSelected: {
     color: "#FFFFFF",
-  },
-
-  bottomSpace: {
-    height: 20,
-  },
-
-  footer: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#EEEEEE",
-  },
-
-  createButton: {
-    height: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 16,
-    backgroundColor: "#111111",
-  },
-
-  createButtonDisabled: {
-    opacity: 0.35,
-  },
-
-  createButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
     fontWeight: "700",
+  },
+
+  composerContainer: {
+    flex: 1,
+    minHeight: 0,
   },
 });

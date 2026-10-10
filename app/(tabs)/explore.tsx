@@ -11,21 +11,33 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
-import CreatedEventPostModal from "@/components/CreatedEventPostModal";
 import ExploreSearchBar from "@/components/ExploreSearchBar";
 import MapPostFocus from "@/components/MapPostFocus";
 import NavigationDrawer from "@/components/NavigationDrawer";
 import FoodPostModal from "@/components/PostModal";
+import CreatedEventPostModal from "@/components/PostUi/EventPostModal";
 import { seedMockDatabase } from "@/data/mock/seed";
 import { postRepository } from "@/data/repositories";
 import type { ExplorePost } from "@/data/repositories/PostRepository";
 
+import CaptionPostModal from "@/components/PostUi/CaptionPostModal";
+import type { CreatedEventPost } from "@/data/mock/eventPostStore";
 import {
   getCreatedPosts,
   subscribeToCreatedPosts,
-} from "@/data/mock/createdPostStore";
+} from "@/data/mock/eventPostStore";
+import type { TextPost } from "@/data/mock/textPostStore";
+import { getTextPosts, subscribeToTextPosts } from "@/data/mock/textPostStore";
 
-import type { CreatedEventPost } from "@/data/mock/createdPostStore";
+import ArticlePostModal from "@/components/PostUi/ArticlePostModal";
+import GigPostModal from "@/components/PostUi/GigPostModal";
+import type { ArticlePost } from "@/data/mock/articlePostStore";
+import {
+  getArticlePosts,
+  subscribeToArticlePosts,
+} from "@/data/mock/articlePostStore";
+import type { GigPost } from "@/data/mock/gigPostStore";
+import { getGigPosts, subscribeToGigPosts } from "@/data/mock/gigPostStore";
 
 interface MapRegion {
   latitude: number;
@@ -98,6 +110,23 @@ export default function HomeScreen() {
     [focusedIndex, focusedPost, posts],
   );
 
+  // for caption post
+  const [textPosts, setTextPosts] = useState(getTextPosts());
+
+  useEffect(() => {
+    const unsubscribe = subscribeToTextPosts(() => {
+      setTextPosts(getTextPosts());
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const [selectedTextPost, setSelectedTextPost] = useState<TextPost | null>(
+    null,
+  );
+
   // For event post
   const [createdPosts, setCreatedPosts] =
     useState<CreatedEventPost[]>(getCreatedPosts());
@@ -106,9 +135,42 @@ export default function HomeScreen() {
     useState<CreatedEventPost | null>(null);
 
   useEffect(() => {
-    return subscribeToCreatedPosts(() => {
+    const unsubscribe = subscribeToCreatedPosts(() => {
       setCreatedPosts(getCreatedPosts());
     });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // For Article based posts:
+  const [articlePosts, setArticlePosts] = useState(getArticlePosts());
+  const [selectedArticlePost, setSelectedArticlePost] =
+    useState<ArticlePost | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToArticlePosts(() => {
+      setArticlePosts(getArticlePosts());
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // for gig post
+  const [gigPosts, setGigPosts] = useState(getGigPosts());
+  const [selectedGigPost, setSelectedGigPost] = useState<GigPost | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToGigPosts(() => {
+      setGigPosts(getGigPosts());
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   /* =========================
@@ -414,7 +476,87 @@ export default function HomeScreen() {
             </View>
           </Marker>
         ))}
+
+        {/* Text/Caption post markers */}
+        {textPosts.map((post) => (
+          <Marker
+            key={post.id}
+            coordinate={{
+              latitude: post.latitude,
+              longitude: post.longitude,
+            }}
+            anchor={{ x: 0.5, y: 1 }}
+            onPress={() => setSelectedTextPost(post)}>
+            <View style={styles.textPostMarker}>
+              <Text style={styles.textPostMarkerText} numberOfLines={3}>
+                {post.text}
+              </Text>
+            </View>
+          </Marker>
+        ))}
+
+        {/* Article based markers */}
+        {articlePosts.map((post) => (
+          <Marker
+            key={post.id}
+            coordinate={{
+              latitude: post.latitude,
+              longitude: post.longitude,
+            }}
+            anchor={{ x: 0.5, y: 1 }}
+            onPress={() => setSelectedArticlePost(post)}>
+            <View style={styles.articleMarker}>
+              <Ionicons name="book-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.articleMarkerText} numberOfLines={2}>
+                {post.title}
+              </Text>
+            </View>
+          </Marker>
+        ))}
+
+        {/* Gig based marker */}
+        {gigPosts.map((post) => (
+          <Marker
+            key={post.id}
+            coordinate={{
+              latitude: post.latitude,
+              longitude: post.longitude,
+            }}
+            anchor={{ x: 0.5, y: 1 }}
+            onPress={() => setSelectedGigPost(post)}>
+            <View style={styles.gigMarker}>
+              <Ionicons name="briefcase-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.gigMarkerText} numberOfLines={2}>
+                {post.title}
+              </Text>
+            </View>
+          </Marker>
+        ))}
       </MapView>
+
+      {/* Caption post modal */}
+      {selectedTextPost && (
+        <CaptionPostModal
+          post={selectedTextPost}
+          onClose={() => setSelectedTextPost(null)}
+        />
+      )}
+
+      {/* Article modal */}
+      {selectedArticlePost && (
+        <ArticlePostModal
+          post={selectedArticlePost}
+          onClose={() => setSelectedArticlePost(null)}
+        />
+      )}
+
+      {/* Gig based modal */}
+      {selectedGigPost && (
+        <GigPostModal
+          post={selectedGigPost}
+          onClose={() => setSelectedGigPost(null)}
+        />
+      )}
 
       {/* =========================
           SEARCH + CATEGORIES
@@ -533,7 +675,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  // evern marker
+  // event marker
   createdMarker: {
     maxWidth: 170,
     minWidth: 90,
@@ -559,5 +701,102 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111111",
     textAlign: "center",
+  },
+
+  // caption based post
+  textPostMarker: {
+    maxWidth: 190,
+    minWidth: 90,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 16,
+    backgroundColor: "#FFF0F5",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+    shadowColor: "#9D5575",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 7,
+    elevation: 6,
+  },
+
+  textPostMarkerText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "700",
+    color: "#743B55",
+    textAlign: "center",
+  },
+
+  // caption post modal
+  textPostModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+
+  textPostModal: {
+    backgroundColor: "#F8F6F3",
+    padding: 16,
+    paddingBottom: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+
+  textPostModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+
+  textPostModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#202020",
+  },
+
+  // For styling article based post
+  articleMarker: {
+    maxWidth: 190,
+    minWidth: 110,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#725B4D",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    elevation: 6,
+  },
+  articleMarkerText: {
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+
+  // gig marker style
+  gigMarker: {
+    maxWidth: 190,
+    minWidth: 100,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#477B69",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    elevation: 6,
+  },
+  gigMarkerText: {
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
 });
