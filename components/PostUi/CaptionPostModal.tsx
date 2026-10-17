@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { CaptionPost } from "@/components/post-renderers";
+import { CaptionPost } from "@/components/PostRenderer";
 import type { TextPost } from "@/data/mock/textPostStore";
 
 type Props = {

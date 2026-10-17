@@ -141,11 +141,15 @@ export default function CreatePostScreen() {
         contents,
       });
 
-      // hardcoded location for now for caption based post
+      // Caption-based post
       if (draft.type === "CAPTION" && draft.caption?.trim()) {
         addTextPost({
           id: postId,
           text: draft.caption.trim(),
+          emoji:
+            typeof draft.metadata?.emoji === "string"
+              ? draft.metadata.emoji
+              : null,
           ...getRandomLocation(23.8328, 91.274),
         });
       }

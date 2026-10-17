@@ -3,6 +3,7 @@ export type TextPost = {
   text: string;
   latitude: number;
   longitude: number;
+  emoji?: string | null;
 };
 
 const DUMMY_POSTS: TextPost[] = [

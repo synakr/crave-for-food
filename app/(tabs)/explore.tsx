@@ -478,6 +478,8 @@ export default function HomeScreen() {
         ))}
 
         {/* Text/Caption post markers */}
+
+        {/* Text/Caption post markers */}
         {textPosts.map((post) => (
           <Marker
             key={post.id}
@@ -487,10 +489,20 @@ export default function HomeScreen() {
             }}
             anchor={{ x: 0.5, y: 1 }}
             onPress={() => setSelectedTextPost(post)}>
-            <View style={styles.textPostMarker}>
-              <Text style={styles.textPostMarkerText} numberOfLines={3}>
-                {post.text}
-              </Text>
+            <View style={styles.textPostMarkerContainer}>
+              {post.emoji ? (
+                <View style={styles.textPostMarkerEmoji}>
+                  <Text style={styles.textPostMarkerEmojiText}>
+                    {post.emoji}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View style={styles.textPostMarker}>
+                <Text style={styles.textPostMarkerText} numberOfLines={3}>
+                  {post.text}
+                </Text>
+              </View>
             </View>
           </Marker>
         ))}
@@ -725,6 +737,34 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: "700",
     color: "#743B55",
+    textAlign: "center",
+  },
+
+  textPostMarkerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+
+  textPostMarkerEmoji: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#FFF0F5",
+    elevation: 5,
+    shadowColor: "#9D5575",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+  },
+
+  textPostMarkerEmojiText: {
+    fontSize: 22,
     textAlign: "center",
   },
 
