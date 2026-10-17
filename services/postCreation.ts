@@ -21,15 +21,24 @@ export async function createEventPost(input: CreateEventPostInput) {
   const post: Post = {
     id,
     author_id: "user-1",
-    place_id: null,
+    latitude: 23.8328,
+    longitude: 91.274,
     post_type: "EVENT",
-    caption: input.description,
     view_count: 0,
     like_count: 0,
     comment_count: 0,
     expires_at: null,
     created_at: now,
     updated_at: now,
+    metadata: {
+      title: input.title,
+      category: input.category,
+      date: input.date,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      location: input.location,
+      audience: input.audience,
+    },
   };
 
   const contents: PostContent[] = [

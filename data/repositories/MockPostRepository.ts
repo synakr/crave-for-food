@@ -99,14 +99,8 @@ export class MockPostRepository implements PostRepository {
 
   async getExplorePosts(): Promise<ExplorePost[]> {
     return db.posts.flatMap((post) => {
-      const place = db.places.find((item) => item.id === post.place_id);
-
-      // Don't create map markers without a valid location.
-      if (
-        !place ||
-        !Number.isFinite(place.latitude) ||
-        !Number.isFinite(place.longitude)
-      ) {
+      // Coordinates now live directly on the post.
+      if (!Number.isFinite(post.latitude) || !Number.isFinite(post.longitude)) {
         return [];
       }
 
@@ -121,19 +115,21 @@ export class MockPostRepository implements PostRepository {
           item.type === "IMAGE" || item.type === "VIDEO" || item.type === "GIF",
       );
 
+      const captionContent = contents.find((item) => item.type === "TEXT");
+
       return [
         {
           ...post,
           image: media?.storage_key ?? "",
-          title: place.name,
-          description: post.caption ?? "",
-          latitude: place.latitude,
-          longitude: place.longitude,
+          title: "",
+          description: captionContent?.text_content ?? "",
+          latitude: post.latitude,
+          longitude: post.longitude,
           user: {
             name: author?.name ?? "Unknown",
             avatar: author?.avatar_url ?? null,
           },
-          location: place.address ?? place.name,
+          location: "",
           likes: post.like_count,
         },
       ];

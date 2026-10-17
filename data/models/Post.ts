@@ -3,13 +3,13 @@ export type PostType = "MEDIA" | "CAPTION" | "EVENT" | "GIG" | "ARTICLE";
 export interface Post {
   id: string;
   author_id: string;
-  place_id: string | null;
+
+  /** Coordinates for the post's main map marker. */
+  latitude: number;
+  longitude: number;
 
   /** Determines which post renderer and composer to use. */
-  post_type?: PostType;
-
-  /** Optional shared caption accompanying the post. */
-  caption: string | null;
+  post_type: PostType;
 
   view_count: number;
   like_count: number;
@@ -19,4 +19,7 @@ export interface Post {
 
   created_at: string;
   updated_at: string;
+
+  /** Optional links, additional locations, and shared post metadata. */
+  metadata: Record<string, unknown> | null;
 }

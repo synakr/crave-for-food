@@ -32,6 +32,10 @@ export default function CaptionPostModal({ post, onClose }: Props) {
                 type: "CAPTION",
                 authorName: "You",
                 caption: post.text,
+                metadata: {
+                  ...(post.emoji ? { emoji: post.emoji } : {}),
+                  ...(post.metadata ?? {}),
+                },
                 createdAt: "Just now",
                 likes: 0,
                 comments: 0,

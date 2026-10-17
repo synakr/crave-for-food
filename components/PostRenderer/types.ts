@@ -11,7 +11,20 @@ export interface RenderablePost {
   mediaUri?: string | null;
   mediaKind?: "IMAGE" | "VIDEO" | "GIF";
   location?: string | null;
-  metadata?: Record<string, unknown> | null;
+  metadata?:
+    | (Record<string, unknown> & {
+        links?: {
+          url: string;
+          title?: string;
+        }[];
+        locations?: {
+          name: string;
+          address?: string;
+          latitude: number;
+          longitude: number;
+        }[];
+      })
+    | null;
   likes?: number;
   comments?: number;
   saved?: boolean;
@@ -22,4 +35,16 @@ export interface PostRendererProps {
   onComment?: (postId: string) => void;
   onSave?: (postId: string) => void;
   onPress?: (post: RenderablePost) => void;
+  metadata?: {
+    links?: {
+      url: string;
+      title?: string;
+    }[];
+    locations?: {
+      name: string;
+      address?: string;
+      latitude: number;
+      longitude: number;
+    }[];
+  } | null;
 }

@@ -1,4 +1,27 @@
-export type ComposerPostType = "MEDIA" | "CAPTION" | "EVENT" | "GIG" | "ARTICLE";
+export type ComposerPostType =
+  | "MEDIA"
+  | "CAPTION"
+  | "EVENT"
+  | "GIG"
+  | "ARTICLE";
+
+export type CaptionLink = {
+  url: string;
+  title?: string;
+};
+
+export type CaptionLocation = {
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+};
+
+export type CaptionMetadata = {
+  emoji?: string;
+  links?: CaptionLink[];
+  locations?: CaptionLocation[];
+};
 
 export interface PostDraft {
   type: ComposerPostType;
@@ -7,7 +30,7 @@ export interface PostDraft {
   body?: string;
   mediaUri?: string | null;
   mediaKind?: "IMAGE" | "VIDEO" | "GIF";
-  metadata?: Record<string, string | number | boolean | null>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ComposerProps {

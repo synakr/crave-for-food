@@ -75,18 +75,25 @@ export default function CreatePostScreen() {
       const now = new Date().toISOString();
       const postId = createId();
 
+      // Generate the main map-marker location for this post.
+      const postLocation =
+        draft.type === "CAPTION"
+          ? getRandomLocation(23.8328, 91.274)
+          : getRandomLocation();
+
       const post: Post = {
         id: postId,
         author_id: "user-1",
-        place_id: null,
+        latitude: postLocation.latitude,
+        longitude: postLocation.longitude,
         post_type: draft.type,
-        caption: draft.caption ?? null,
         view_count: 0,
         like_count: 0,
         comment_count: 0,
         expires_at: null,
         created_at: now,
         updated_at: now,
+        metadata: null,
       };
 
       const metadata: Record<string, unknown> = {
@@ -100,6 +107,7 @@ export default function CreatePostScreen() {
       if (draft.body) {
         metadata.body = draft.body;
       }
+      post.metadata = Object.keys(metadata).length > 0 ? metadata : null;
 
       const contents: PostContent[] = [];
 
@@ -130,7 +138,12 @@ export default function CreatePostScreen() {
           type: "TEXT",
           storage_key: null,
           text_content: textContent ?? null,
-          metadata: Object.keys(metadata).length > 0 ? metadata : null,
+          metadata:
+            draft.type === "CAPTION"
+              ? null
+              : Object.keys(metadata).length > 0
+                ? metadata
+                : null,
           content_order: contents.length,
           created_at: now,
         });
@@ -142,6 +155,7 @@ export default function CreatePostScreen() {
       });
 
       // Caption-based post
+
       if (draft.type === "CAPTION" && draft.caption?.trim()) {
         addTextPost({
           id: postId,
@@ -150,7 +164,18 @@ export default function CreatePostScreen() {
             typeof draft.metadata?.emoji === "string"
               ? draft.metadata.emoji
               : null,
-          ...getRandomLocation(23.8328, 91.274),
+          ...postLocation,
+          metadata: {
+            ...(draft.metadata?.emoji
+              ? { emoji: draft.metadata.emoji as string }
+              : {}),
+            ...(Array.isArray(draft.metadata?.links)
+              ? { links: draft.metadata.links }
+              : {}),
+            ...(Array.isArray(draft.metadata?.locations)
+              ? { locations: draft.metadata.locations }
+              : {}),
+          },
         });
       }
 
