@@ -29,11 +29,18 @@ const value = (
 export default function EventPost(props: PostRendererProps) {
   const { post } = props;
   const date = value(post.metadata, "date");
-  const start = value(post.metadata, "startTime");
-  const end = value(post.metadata, "endTime");
+  const start = value(post.metadata, "start_time");
+  const end = value(post.metadata, "end_time");
   const category = value(post.metadata, "category") || "Event";
+  const additionalLocations = Array.isArray(post.metadata?.locations)
+    ? (post.metadata.locations as Array<Record<string, unknown>>)
+    : [];
+  const firstLocation = additionalLocations[0];
+  const metadataLocation =
+    typeof firstLocation?.name === "string" ? firstLocation.name : "";
   const location =
     value(post.metadata, "location") ||
+    metadataLocation ||
     post.location ||
     "Location to be announced";
   return (

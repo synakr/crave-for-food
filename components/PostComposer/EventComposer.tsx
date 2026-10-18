@@ -15,6 +15,7 @@ export default function EventComposer({
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("Meetup");
+
   const publish = async () => {
     if (
       ![title, description, date, startTime, endTime, location].every((v) =>
@@ -27,19 +28,21 @@ export default function EventComposer({
       );
       return;
     }
+
     await onSubmit({
       type: "EVENT",
       title: title.trim(),
       caption: description.trim(),
       metadata: {
-        category,
+        category: category.trim() || "Meetup",
         date: date.trim(),
-        startTime: startTime.trim(),
-        endTime: endTime.trim(),
+        start_time: startTime.trim(),
+        end_time: endTime.trim(),
         location: location.trim(),
       },
     });
   };
+
   return (
     <ComposerLayout
       title="Create event"
@@ -53,6 +56,7 @@ export default function EventComposer({
         placeholder="e.g. Let's play cricket!"
         maxLength={100}
       />
+
       <Field
         label="Description"
         value={description}
@@ -61,30 +65,35 @@ export default function EventComposer({
         multiline
         maxLength={1000}
       />
+
       <Field
         label="Category"
         value={category}
         onChangeText={setCategory}
         placeholder="Meetup, Sports, Community..."
       />
+
       <Field
         label="Date"
         value={date}
         onChangeText={setDate}
         placeholder="e.g. 12 Oct 2026"
       />
+
       <Field
         label="Start time"
         value={startTime}
         onChangeText={setStartTime}
         placeholder="e.g. 4:00 PM"
       />
+
       <Field
         label="End time"
         value={endTime}
         onChangeText={setEndTime}
         placeholder="e.g. 7:00 PM"
       />
+
       <Field
         label="Location"
         value={location}

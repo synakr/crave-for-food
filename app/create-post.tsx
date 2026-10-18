@@ -77,8 +77,8 @@ export default function CreatePostScreen() {
 
       // Generate the main map-marker location for this post.
       const existingPosts = await postRepository.getPosts();
-      let postLocation =
-        draft.type === "CAPTION" ? getRandomLocation() : getRandomLocation();
+      // Use the same random-location utility for every post type.
+      let postLocation = getRandomLocation();
       while (
         existingPosts.some(
           (post) =>
@@ -115,8 +115,11 @@ export default function CreatePostScreen() {
       if (draft.body) {
         metadata.body = draft.body;
       }
+      // Keep post-level metadata limited to shared link/location metadata
+      // for EVENT and ARTICLE posts. Type-specific details belong in
+      // post_contents.metadata.
       const postMetadata =
-        draft.type === "ARTICLE"
+        draft.type === "ARTICLE" || draft.type === "EVENT"
           ? {
               ...(Array.isArray(metadata.links)
                 ? { links: metadata.links }
@@ -131,7 +134,43 @@ export default function CreatePostScreen() {
 
       const contents: PostContent[] = [];
 
-      if (draft.type !== "ARTICLE" && draft.mediaUri) {
+      const textContent = draft.caption ?? null;
+
+      if (draft.type === "EVENT") {
+        // Event details are the primary content item; the poster is optional.
+        contents.push({
+          id: `${postId}-text`,
+          post_id: postId,
+          type: "TEXT",
+          storage_key: null,
+          text_content: null,
+          metadata: {
+            title: draft.title?.trim() ?? "Untitled Event",
+            description: draft.caption?.trim() ?? "",
+            category: String(metadata.category ?? "Meetup"),
+            date: String(metadata.date ?? ""),
+            start_time: String(metadata.start_time ?? metadata.startTime ?? ""),
+            end_time: String(metadata.end_time ?? metadata.endTime ?? ""),
+            audience: String(metadata.audience ?? "PUBLIC"),
+            location: String(metadata.location ?? ""),
+          },
+          content_order: 0,
+          created_at: now,
+        });
+
+        if (draft.mediaUri) {
+          contents.push({
+            id: `${postId}-poster`,
+            post_id: postId,
+            type: "IMAGE",
+            storage_key: draft.mediaUri,
+            text_content: null,
+            metadata: null,
+            content_order: 1,
+            created_at: now,
+          });
+        }
+      } else if (draft.type !== "ARTICLE" && draft.mediaUri) {
         contents.push({
           id: `${postId}-media`,
           post_id: postId,
@@ -143,8 +182,6 @@ export default function CreatePostScreen() {
           created_at: now,
         });
       }
-
-      const textContent = draft.caption ?? null;
 
       if (draft.type === "ARTICLE") {
         contents.push({
@@ -174,9 +211,10 @@ export default function CreatePostScreen() {
           });
         });
       } else if (
-        textContent ||
-        draft.type !== "MEDIA" ||
-        Object.keys(metadata).length > 0
+        draft.type !== "EVENT" &&
+        (textContent ||
+          draft.type !== "MEDIA" ||
+          Object.keys(metadata).length > 0)
       ) {
         contents.push({
           id: `${postId}-text`,
@@ -255,8 +293,8 @@ export default function CreatePostScreen() {
           description: draft.caption?.trim() ?? "",
           category: String(metadata.category ?? "Meetup"),
           date: String(metadata.date ?? ""),
-          startTime: String(metadata.startTime ?? ""),
-          endTime: String(metadata.endTime ?? ""),
+          startTime: String(metadata.start_time ?? metadata.startTime ?? ""),
+          endTime: String(metadata.end_time ?? metadata.endTime ?? ""),
           location: String(metadata.location ?? ""),
           audience: "Everyone",
           imageUri: draft.mediaUri ?? null,

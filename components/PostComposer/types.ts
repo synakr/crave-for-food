@@ -29,6 +29,25 @@ export type CaptionMetadata = {
   locations?: CaptionLocation[];
 };
 
+export type GigMetadata = {
+  gigType: string;
+  location: string;
+  contact?: string | null;
+  links?: CaptionLink[];
+  locations?: CaptionLocation[];
+};
+
+export type EventMetadata = {
+  category: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  audience: string;
+  location: string;
+  links?: CaptionLink[];
+  locations?: CaptionLocation[];
+};
+
 export interface PostDraft {
   type: ComposerPostType;
   title?: string;

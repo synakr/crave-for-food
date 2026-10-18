@@ -3,6 +3,33 @@ import { Alert } from "react-native";
 import { ComposerLayout, Field } from "./ComposerUI";
 import type { ComposerProps } from "./types";
 
+type GigLink = { url: string; title: string };
+
+function parseLinks(value: string): GigLink[] | null {
+  const entries = value
+    .split(/\n|,/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  const links: GigLink[] = [];
+  for (const entry of entries) {
+    let url: URL;
+    try {
+      url = new URL(entry);
+    } catch {
+      return null;
+    }
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    links.push({
+      url: url.toString(),
+      title: url.hostname.replace(/^www\./, ""),
+    });
+  }
+
+  return links;
+}
+
 export default function GigComposer({
   onSubmit,
   onCancel,
@@ -13,22 +40,36 @@ export default function GigComposer({
   const [gigType, setGigType] = useState("Offer");
   const [location, setLocation] = useState("");
   const [contact, setContact] = useState("");
+  const [linksText, setLinksText] = useState("");
+
   const publish = async () => {
-    if (![title, description, location].every((v) => v.trim())) {
+    if (![title, description, location].every((value) => value.trim())) {
       Alert.alert("Missing details", "Add a title, description, and location.");
       return;
     }
+
+    const links = parseLinks(linksText);
+    if (links === null) {
+      Alert.alert(
+        "Invalid link",
+        "Enter valid http:// or https:// URLs, one per line.",
+      );
+      return;
+    }
+
     await onSubmit({
       type: "GIG",
       title: title.trim(),
       caption: description.trim(),
       metadata: {
-        gigType,
+        gigType: gigType.trim() || "Offer",
         location: location.trim(),
         contact: contact.trim() || null,
+        ...(links.length ? { links } : {}),
       },
     });
   };
+
   return (
     <ComposerLayout
       title="Post a gig"
@@ -67,6 +108,13 @@ export default function GigComposer({
         value={contact}
         onChangeText={setContact}
         placeholder="How can people reach you?"
+      />
+      <Field
+        label="Useful links · Optional"
+        value={linksText}
+        onChangeText={setLinksText}
+        placeholder="https://example.com/apply\nhttps://example.com/portfolio"
+        multiline
       />
     </ComposerLayout>
   );

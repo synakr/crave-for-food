@@ -1,3 +1,20 @@
+export type GigPostLink = {
+  url: string;
+  title?: string;
+};
+
+export type GigPostLocation = {
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+};
+
+export type GigPostMetadata = {
+  links?: GigPostLink[];
+  locations?: GigPostLocation[];
+};
+
 export type GigPost = {
   id: string;
   title: string;
@@ -8,6 +25,8 @@ export type GigPost = {
   latitude: number;
   longitude: number;
   createdAt: string;
+  /** Optional posts.metadata fields from gig-post.md. */
+  metadata?: GigPostMetadata;
 };
 
 const CAMPUS = {
@@ -82,6 +101,14 @@ export function addGigPost(
 ): GigPost {
   const createdPost: GigPost = {
     ...post,
+    metadata: post.metadata
+      ? {
+          ...(post.metadata.links ? { links: [...post.metadata.links] } : {}),
+          ...(post.metadata.locations
+            ? { locations: [...post.metadata.locations] }
+            : {}),
+        }
+      : undefined,
     id: `gig-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     latitude: CAMPUS.latitude + (Math.random() - 0.5) * 0.008,
     longitude: CAMPUS.longitude + (Math.random() - 0.5) * 0.008,
