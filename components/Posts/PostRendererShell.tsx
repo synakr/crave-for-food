@@ -89,6 +89,11 @@ export const rendererStyles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: "#F8F6F3",
   },
+  attachment: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#725B4D",
+  },
 });
 const styles = StyleSheet.create({
   card: {

@@ -116,13 +116,22 @@ export class MockPostRepository implements PostRepository {
       );
 
       const captionContent = contents.find((item) => item.type === "TEXT");
+      const articleMetadata = captionContent?.metadata;
 
       return [
         {
           ...post,
           image: media?.storage_key ?? "",
-          title: "",
-          description: captionContent?.text_content ?? "",
+          title:
+            post.post_type === "ARTICLE" &&
+            typeof articleMetadata?.title === "string"
+              ? articleMetadata.title
+              : "",
+          description:
+            post.post_type === "ARTICLE" &&
+            typeof articleMetadata?.body === "string"
+              ? articleMetadata.body
+              : (captionContent?.text_content ?? ""),
           latitude: post.latitude,
           longitude: post.longitude,
           user: {

@@ -7,7 +7,7 @@
 > social discovery app. It must support different kinds of user-created
 > content without becoming structurally tied to one theme or occasion.
 
-------------------------------------------------------------------------
+---
 
 ## 1. Purpose
 
@@ -21,13 +21,13 @@ emerge.
 
 This document is the source of truth for decisions about:
 
--   Supported post types and their creation experiences.
--   How posts are rendered throughout the app.
--   Shared functionality such as likes, comments, and saves.
--   How occasion-based experiences (for example, Christmas) fit into the
-    system.
--   When to reuse an existing post type and when to introduce a new one.
--   Compatibility, persistence, and safe incremental implementation.
+- Supported post types and their creation experiences.
+- How posts are rendered throughout the app.
+- Shared functionality such as likes, comments, and saves.
+- How occasion-based experiences (for example, Christmas) fit into the
+  system.
+- When to reuse an existing post type and when to introduce a new one.
+- Compatibility, persistence, and safe incremental implementation.
 
 ## 2. Non-negotiable principles
 
@@ -61,75 +61,79 @@ This document is the source of truth for decisions about:
 
 The initial system has five post types.
 
-  -----------------------------------------------------------------------
-  Type                    Purpose                 Typical content
-  ----------------------- ----------------------- -----------------------
-  `MEDIA`                 Visual or short-form    Photo, GIF, or a short
-                          media sharing           clip (including a 2--3
-                                                  second clip)
+---
 
-  `CAPTION`               Quick text-first        Thought, short update,
-                          sharing                 question, or status
+Type Purpose Typical content
 
-  `EVENT`                 Organize or promote a   Meetup, sports
-                          gathering               activity, community
-                                                  gathering, or other
-                                                  event
+---
 
-  `GIG`                   Share an opportunity or A gig, offer, task, or
-                          request                 request, with details
-                                                  appropriate to the
-                                                  product's eventual gig
-                                                  model
+`MEDIA` Visual or short-form Photo, GIF, or a short
+media sharing clip (including a 2--3
+second clip)
 
-  `ARTICLE`               Longer-form writing     Article, story, or poem
-  -----------------------------------------------------------------------
+`CAPTION` Quick text-first Thought, short update,
+sharing question, or status
+
+`EVENT` Organize or promote a Meetup, sports
+gathering activity, community
+gathering, or other
+event
+
+`GIG` Share an opportunity or A gig, offer, task, or
+request request, with details
+appropriate to the
+product's eventual gig
+model
+
+`ARTICLE` Longer-form writing Article, story, or poem
+
+---
 
 These types are the initial supported set, not a limit on Crave's future
 capabilities.
 
 ### 3.1 Media posts
 
--   Support a media-first experience for photos, GIFs, and short clips.
--   A caption may accompany the media.
--   The composer and renderer should accommodate media-specific UI
-    without forcing text-only posts to use media layouts.
--   Media limits, accepted formats, playback behavior, and upload rules
-    must be explicit and validated by the relevant layer.
+- Support a media-first experience for photos, GIFs, and short clips.
+- A caption may accompany the media.
+- The composer and renderer should accommodate media-specific UI
+  without forcing text-only posts to use media layouts.
+- Media limits, accepted formats, playback behavior, and upload rules
+  must be explicit and validated by the relevant layer.
 
 ### 3.2 Caption posts
 
--   Support a text-first post with no photo required by default.
--   The UI must support a plain text-only post.
--   If optional media is later supported, it must not make media
-    mandatory or undermine the text-first experience.
+- Support a text-first post with no photo required by default.
+- The UI must support a plain text-only post.
+- If optional media is later supported, it must not make media
+  mandatory or undermine the text-first experience.
 
 ### 3.3 Event posts
 
--   Represent a planned gathering with event-specific fields such as
-    title, description, category, date, start time, end time, location,
-    audience, and an optional cover image.
--   Preserve existing event creation and display behavior during
-    migration.
--   Event-specific information must be represented consistently so the
-    event renderer and any event-detail UI can read it.
--   Event fields should not be added indiscriminately to the shared
-    `posts` record if they are only meaningful to events.
+- Represent a planned gathering with event-specific fields such as
+  title, description, category, date, start time, end time, location,
+  audience, and an optional cover image.
+- Preserve existing event creation and display behavior during
+  migration.
+- Event-specific information must be represented consistently so the
+  event renderer and any event-detail UI can read it.
+- Event fields should not be added indiscriminately to the shared
+  `posts` record if they are only meaningful to events.
 
 ### 3.4 Gig posts
 
--   Have a dedicated composer and renderer.
--   Define and validate gig-specific fields within the gig feature
-    rather than leaking them into unrelated post types.
--   The detailed gig data contract must be documented before
-    implementation depends on fields not yet agreed upon.
+- Have a dedicated composer and renderer.
+- Define and validate gig-specific fields within the gig feature
+  rather than leaking them into unrelated post types.
+- The detailed gig data contract must be documented before
+  implementation depends on fields not yet agreed upon.
 
 ### 3.5 Article / poem posts
 
--   Support longer-form written content.
--   Use a dedicated writing composer and readable renderer.
--   Keep article-specific fields and layout out of the media and caption
-    components.
+- Support longer-form written content.
+- Use a dedicated writing composer and readable renderer.
+- Keep article-specific fields and layout out of the media and caption
+  components.
 
 ## 4. Required project structure
 
@@ -137,7 +141,7 @@ Use the following architecture as the target structure. Existing files
 may remain in place during migration; do not delete or move working
 functionality until the replacement has been verified.
 
-``` text
+```text
 app/
   create-post.tsx                 # Entry point and post-type selection
 
@@ -149,15 +153,12 @@ components/
     GigComposer.tsx
     ArticleComposer.tsx
 
-  post-renderers/
-    MediaPost.tsx
-    CaptionPost.tsx
-    EventPost.tsx
-    GigPost.tsx
-    ArticlePost.tsx
-
   posts/
-    PostActions.tsx               # Shared likes, comments, saves, etc.
+        CaptionPost.tsx               # Compact renderer + CaptionPostModal export
+        EventPost.tsx                 # Compact renderer + CreatedEventPostModal export
+        GigPost.tsx                   # Compact renderer + GigPostModal export
+        ArticlePost.tsx               # Compact renderer + ArticlePostModal export
+        PostActions.tsx               # Shared likes, comments, saves, etc.
 
 data/
   models/
@@ -197,11 +198,11 @@ implementations.
 
 Each composer owns:
 
--   Its form fields and local form state.
--   Type-specific validation and input limits.
--   Type-specific selection UI, such as media picking when relevant.
--   Submission of a typed draft through the agreed creation contract.
--   Clear loading, success, failure, and cancel behavior.
+- Its form fields and local form state.
+- Type-specific validation and input limits.
+- Type-specific selection UI, such as media picking when relevant.
+- Submission of a typed draft through the agreed creation contract.
+- Clear loading, success, failure, and cancel behavior.
 
 A composer must not independently implement its own database persistence
 logic. It should use the shared creation/persistence path.
@@ -210,24 +211,27 @@ logic. It should use the shared creation/persistence path.
 
 `app/create-post.tsx` owns:
 
--   The available post-type choices.
--   Which composer is currently active.
--   Shared navigation/cancel behavior where appropriate.
--   The connection between a composer submission and the shared creation
-    flow.
+- The available post-type choices.
+- Which composer is currently active.
+- Shared navigation/cancel behavior where appropriate.
+- The connection between a composer submission and the shared creation
+  flow.
 
 It should not become a giant component containing all five forms. Adding
 a new type should not require rewriting the existing composers.
 
 ## 6. Rendering and discovery
 
-Each post type has a dedicated renderer:
+Each in-scope post type has a dedicated display module in `components/Posts/`:
 
--   `MediaPost.tsx`
--   `CaptionPost.tsx`
--   `EventPost.tsx`
--   `GigPost.tsx`
--   `ArticlePost.tsx`
+- `CaptionPost.tsx`
+- `EventPost.tsx`
+- `GigPost.tsx`
+- `ArticlePost.tsx`
+
+Each module preserves its default compact renderer export and exposes the
+corresponding detail modal as a named export. MEDIA rendering remains in its
+existing map/modal path and is intentionally outside this display grouping.
 
 A renderer should display the post type's content and relevant details.
 Shared interactions should be delegated to `PostActions.tsx` or a common
@@ -235,14 +239,14 @@ equivalent.
 
 ### 6.1 Renderer responsibilities
 
--   Render the correct content for the post type.
--   Handle absent optional content gracefully.
--   Keep type-specific layout and behavior local to that renderer.
--   Use shared author, timestamp, location, and action UI where
-    appropriate.
--   Avoid assuming that every post has an image, place, or caption.
--   Avoid reading type-specific metadata through unsafe assumptions;
-    validate or normalize data at a clear boundary.
+- Render the correct content for the post type.
+- Handle absent optional content gracefully.
+- Keep type-specific layout and behavior local to that renderer.
+- Use shared author, timestamp, location, and action UI where
+  appropriate.
+- Avoid assuming that every post has an image, place, or caption.
+- Avoid reading type-specific metadata through unsafe assumptions;
+  validate or normalize data at a clear boundary.
 
 ### 6.2 Renderer selection
 
@@ -260,10 +264,10 @@ surface when such a surface exists.
 `components/posts/PostActions.tsx` is responsible for shared actions
 where applicable, such as:
 
--   Like / unlike.
--   Open or view comments.
--   Save / unsave.
--   Share or other common actions introduced later.
+- Like / unlike.
+- Open or view comments.
+- Save / unsave.
+- Share or other common actions introduced later.
 
 The action component should receive explicit post identity and callbacks
 or use the established shared data layer. It must not contain five
@@ -282,15 +286,15 @@ completely separate persistence system.
 The shared `posts` record should contain fields that apply broadly
 across post types, such as:
 
--   Post ID.
--   Author ID.
--   Optional place ID.
--   Post type.
--   Shared caption or summary, when applicable.
--   Common counters such as views, likes, and comments (subject to the
-    verified database design).
--   Creation and update timestamps.
--   Optional expiration information, if supported by the product.
+- Post ID.
+- Author ID.
+- Optional place ID.
+- Post type.
+- Shared caption or summary, when applicable.
+- Common counters such as views, likes, and comments (subject to the
+  verified database design).
+- Creation and update timestamps.
+- Optional expiration information, if supported by the product.
 
 Do not add every possible event, gig, article, and future occasion field
 to the shared post table. A shared column is appropriate when the field
@@ -301,13 +305,13 @@ has a consistent meaning across most or all post types.
 `post_contents` can represent ordered content associated with a post,
 such as text and media. A content record may contain:
 
--   Content ID and owning post ID.
--   Content type (for example, text or image).
--   Storage key or media reference, when applicable.
--   Text content, when applicable.
--   Content order.
--   Optional metadata for flexible, type-specific information.
--   Creation timestamp.
+- Content ID and owning post ID.
+- Content type (for example, text or image).
+- Storage key or media reference, when applicable.
+- Text content, when applicable.
+- Content order.
+- Optional metadata for flexible, type-specific information.
+- Creation timestamp.
 
 Use explicit, validated data contracts for fields that drive important
 behavior. JSON/JSONB metadata is useful for flexible information, but it
@@ -393,8 +397,8 @@ post type.
 Where occasion tagging is needed, treat it as a separate concept from
 the post type. For example, a post could conceptually have:
 
--   `post_type = MEDIA`
--   `occasion = CHRISTMAS`
+- `post_type = MEDIA`
+- `occasion = CHRISTMAS`
 
 This is a conceptual example, not a claim that an `occasion` database
 column currently exists. Choose the actual representation only after
@@ -437,35 +441,35 @@ the difference is mainly visual or seasonal, prefer a theme or template.
 
 When adding a new type, update all relevant parts together:
 
--   Type definitions and validation.
--   Composer and renderer.
--   Type-to-composer and type-to-renderer mappings.
--   Shared creation and repository handling.
--   Persistence and any necessary migration.
--   Explore/discovery behavior and detail views.
--   Shared actions, where relevant.
--   Tests and architecture documentation.
+- Type definitions and validation.
+- Composer and renderer.
+- Type-to-composer and type-to-renderer mappings.
+- Shared creation and repository handling.
+- Persistence and any necessary migration.
+- Explore/discovery behavior and detail views.
+- Shared actions, where relevant.
+- Tests and architecture documentation.
 
 ## 10. Compatibility and safe migration
 
 Crave already has working functionality that must be preserved while
 this architecture is introduced. Refactoring must be incremental.
 
--   Keep the existing map, map markers, location permission flow,
-    location search, recenter behavior, navigation drawer, focus
-    interactions, and existing post modals working.
--   Do not remove the temporary event store or its UI until the
-    replacement reads and displays shared-repository events correctly
-    and has been verified.
--   Preserve existing records and handle legacy records that do not yet
-    have a `post_type`.
--   During transition, use a documented fallback for legacy records
-    rather than assuming every record already contains the new field.
--   Avoid broad rewrites when a focused change is sufficient.
--   Verify imports, TypeScript types, and runtime behavior after each
-    migration step.
--   Do not claim a feature is integrated merely because its component
-    exists.
+- Keep the existing map, map markers, location permission flow,
+  location search, recenter behavior, navigation drawer, focus
+  interactions, and existing post modals working.
+- Do not remove the temporary event store or its UI until the
+  replacement reads and displays shared-repository events correctly
+  and has been verified.
+- Preserve existing records and handle legacy records that do not yet
+  have a `post_type`.
+- During transition, use a documented fallback for legacy records
+  rather than assuming every record already contains the new field.
+- Avoid broad rewrites when a focused change is sufficient.
+- Verify imports, TypeScript types, and runtime behavior after each
+  migration step.
+- Do not claim a feature is integrated merely because its component
+  exists.
 
 A safe migration order is:
 
@@ -487,69 +491,69 @@ A safe migration order is:
 
 ### Creation
 
--   [ ] Each of the five types can be selected.
--   [ ] Each composer validates required fields.
--   [ ] Media selection is optional or required according to the type's
-    defined behavior.
--   [ ] Cancel and back navigation work.
--   [ ] Repeated taps cannot accidentally create duplicate posts.
--   [ ] Errors are shown clearly and do not silently discard input.
+- [ ] Each of the five types can be selected.
+- [ ] Each composer validates required fields.
+- [ ] Media selection is optional or required according to the type's
+      defined behavior.
+- [ ] Cancel and back navigation work.
+- [ ] Repeated taps cannot accidentally create duplicate posts.
+- [ ] Errors are shown clearly and do not silently discard input.
 
 ### Persistence and data integrity
 
--   [ ] Every new post has a unique ID and correct author reference.
--   [ ] The post type is stored and retrieved consistently.
--   [ ] Content belongs to the correct post and preserves content order.
--   [ ] Failed creation does not leave inconsistent partial data.
--   [ ] Update and delete behavior is correct.
--   [ ] Missing optional content does not crash rendering.
--   [ ] The mock and production adapters follow the same contract.
+- [ ] Every new post has a unique ID and correct author reference.
+- [ ] The post type is stored and retrieved consistently.
+- [ ] Content belongs to the correct post and preserves content order.
+- [ ] Failed creation does not leave inconsistent partial data.
+- [ ] Update and delete behavior is correct.
+- [ ] Missing optional content does not crash rendering.
+- [ ] The mock and production adapters follow the same contract.
 
 ### Rendering and interactions
 
--   [ ] Every known type selects the correct renderer.
--   [ ] Legacy or unknown types have a safe fallback.
--   [ ] Shared actions operate on the correct post.
--   [ ] Text-only posts do not require images.
--   [ ] Posts without coordinates do not break map rendering.
--   [ ] Existing map, search, location, navigation, markers, and modals
-    still work.
+- [ ] Every known type selects the correct renderer.
+- [ ] Legacy or unknown types have a safe fallback.
+- [ ] Shared actions operate on the correct post.
+- [ ] Text-only posts do not require images.
+- [ ] Posts without coordinates do not break map rendering.
+- [ ] Existing map, search, location, navigation, markers, and modals
+      still work.
 
 ### Occasions
 
--   [ ] Occasion styling can be used with existing post types.
--   [ ] Removing or changing an occasion theme does not corrupt the
-    underlying post.
--   [ ] An occasion does not create a new type unless the type-addition
-    criteria are met.
--   [ ] Ordinary non-occasion posts continue to work.
+- [ ] Occasion styling can be used with existing post types.
+- [ ] Removing or changing an occasion theme does not corrupt the
+      underlying post.
+- [ ] An occasion does not create a new type unless the type-addition
+      criteria are met.
+- [ ] Ordinary non-occasion posts continue to work.
 
 ## 12. Definition of done
 
 The post system is considered complete for a release when:
 
--   The five initial post types can be created through one entry point.
--   Each type has a dedicated composer and renderer.
--   Shared persistence and common actions work consistently.
--   Occasion-based experiences reuse existing types unless a new type is
-    demonstrably necessary.
--   Existing Crave functionality remains intact.
--   The production schema and security rules have been verified before
-    deployment.
--   Tests cover creation, retrieval, rendering, actions, failure
-    handling, legacy data, and relevant occasion behavior.
--   Documentation is updated when the architecture or supported types
-    change.
+- The five initial post types can be created through one entry point.
+- Each type has a dedicated composer and renderer.
+- Shared persistence and common actions work consistently.
+- Occasion-based experiences reuse existing types unless a new type is
+  demonstrably necessary.
+- Existing Crave functionality remains intact.
+- The production schema and security rules have been verified before
+  deployment.
+- Tests cover creation, retrieval, rendering, actions, failure
+  handling, legacy data, and relevant occasion behavior.
+- Documentation is updated when the architecture or supported types
+  change.
 
-------------------------------------------------------------------------
+---
 
 ## Summary
 
 **Crave has one extensible post system, not a separate system for every
 theme or occasion.**
 
-Post type describes *what the content is*. Occasion describes *the
-context or theme around it*. Composers and renderers stay independent by
+Post type describes _what the content is_. Occasion describes _the
+context or theme around it_. Composers and renderers stay independent by
 type; persistence and shared actions stay common; new types are
 introduced only when the product genuinely needs them. All changes must
 preserve existing functionality and be verified against the real data

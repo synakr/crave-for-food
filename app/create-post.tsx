@@ -20,7 +20,6 @@ import type {
   ComposerPostType,
   PostDraft,
 } from "@/components/PostComposer/types";
-import { addArticlePost } from "@/data/mock/articlePostStore";
 import { addCreatedPost } from "@/data/mock/eventPostStore";
 import { addGigPost } from "@/data/mock/gigPostStore";
 import { addTextPost } from "@/data/mock/textPostStore";
@@ -76,10 +75,20 @@ export default function CreatePostScreen() {
       const postId = createId();
 
       // Generate the main map-marker location for this post.
-      const postLocation =
+      const existingPosts = await postRepository.getPosts();
+      let postLocation =
         draft.type === "CAPTION"
           ? getRandomLocation(23.8328, 91.274)
           : getRandomLocation();
+      while (
+        existingPosts.some(
+          (post) =>
+            post.latitude === postLocation.latitude &&
+            post.longitude === postLocation.longitude,
+        )
+      ) {
+        postLocation = getRandomLocation();
+      }
 
       const post: Post = {
         id: postId,
@@ -107,11 +116,23 @@ export default function CreatePostScreen() {
       if (draft.body) {
         metadata.body = draft.body;
       }
-      post.metadata = Object.keys(metadata).length > 0 ? metadata : null;
+      const postMetadata =
+        draft.type === "ARTICLE"
+          ? {
+              ...(Array.isArray(metadata.links)
+                ? { links: metadata.links }
+                : {}),
+              ...(Array.isArray(metadata.locations)
+                ? { locations: metadata.locations }
+                : {}),
+            }
+          : metadata;
+      post.metadata =
+        Object.keys(postMetadata).length > 0 ? postMetadata : null;
 
       const contents: PostContent[] = [];
 
-      if (draft.mediaUri) {
+      if (draft.type !== "ARTICLE" && draft.mediaUri) {
         contents.push({
           id: `${postId}-media`,
           post_id: postId,
@@ -124,10 +145,36 @@ export default function CreatePostScreen() {
         });
       }
 
-      const textContent =
-        draft.type === "ARTICLE" ? draft.body : (draft.caption ?? null);
+      const textContent = draft.caption ?? null;
 
-      if (
+      if (draft.type === "ARTICLE") {
+        contents.push({
+          id: `${postId}-text`,
+          post_id: postId,
+          type: "TEXT",
+          storage_key: null,
+          text_content: null,
+          metadata: {
+            title: draft.title!.trim(),
+            body: draft.body!.trim(),
+            article_type: String(draft.metadata?.articleType ?? "Article"),
+          },
+          content_order: 0,
+          created_at: now,
+        });
+        (draft.mediaUris ?? []).forEach((uri, index) => {
+          contents.push({
+            id: `${postId}-image-${index + 1}`,
+            post_id: postId,
+            type: "IMAGE",
+            storage_key: uri,
+            text_content: null,
+            metadata: null,
+            content_order: index + 1,
+            created_at: now,
+          });
+        });
+      } else if (
         textContent ||
         draft.type !== "MEDIA" ||
         Object.keys(metadata).length > 0
@@ -176,21 +223,6 @@ export default function CreatePostScreen() {
               ? { locations: draft.metadata.locations }
               : {}),
           },
-        });
-      }
-
-      // hardcoded location for now for article based post
-      if (
-        draft.type === "ARTICLE" &&
-        draft.title?.trim() &&
-        draft.body?.trim()
-      ) {
-        addArticlePost({
-          id: postId,
-          title: draft.title.trim(),
-          body: draft.body.trim(),
-          articleType: String(draft.metadata?.articleType ?? "Article"),
-          ...getRandomLocation(23.84251, 91.42521),
         });
       }
 

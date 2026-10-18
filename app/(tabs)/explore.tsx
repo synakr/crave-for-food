@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
@@ -15,12 +16,16 @@ import ExploreSearchBar from "@/components/ExploreSearchBar";
 import MapPostFocus from "@/components/MapPostFocus";
 import NavigationDrawer from "@/components/NavigationDrawer";
 import FoodPostModal from "@/components/PostModal";
-import CreatedEventPostModal from "@/components/PostUi/EventPostModal";
+import {
+  ArticlePostModal,
+  CaptionPostModal,
+  CreatedEventPostModal,
+  GigPostModal,
+} from "@/components/Posts";
 import { seedMockDatabase } from "@/data/mock/seed";
 import { postRepository } from "@/data/repositories";
 import type { ExplorePost } from "@/data/repositories/PostRepository";
 
-import CaptionPostModal from "@/components/PostUi/CaptionPostModal";
 import type { CreatedEventPost } from "@/data/mock/eventPostStore";
 import {
   getCreatedPosts,
@@ -29,15 +34,9 @@ import {
 import type { TextPost } from "@/data/mock/textPostStore";
 import { getTextPosts, subscribeToTextPosts } from "@/data/mock/textPostStore";
 
-import ArticlePostModal from "@/components/PostUi/ArticlePostModal";
-import GigPostModal from "@/components/PostUi/GigPostModal";
-import type { ArticlePost } from "@/data/mock/articlePostStore";
-import {
-  getArticlePosts,
-  subscribeToArticlePosts,
-} from "@/data/mock/articlePostStore";
 import type { GigPost } from "@/data/mock/gigPostStore";
 import { getGigPosts, subscribeToGigPosts } from "@/data/mock/gigPostStore";
+import type { PostContent } from "@/data/models/PostContent";
 
 interface MapRegion {
   latitude: number;
@@ -144,20 +143,32 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // For Article based posts:
-  const [articlePosts, setArticlePosts] = useState(getArticlePosts());
+  const articlePosts = posts.filter((post) => post.post_type === "ARTICLE");
   const [selectedArticlePost, setSelectedArticlePost] =
-    useState<ArticlePost | null>(null);
+    useState<ExplorePost | null>(null);
+  const [selectedArticleContents, setSelectedArticleContents] = useState<
+    PostContent[]
+  >([]);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToArticlePosts(() => {
-      setArticlePosts(getArticlePosts());
-    });
-
-    return () => {
-      unsubscribe();
-    };
+  const loadPosts = useCallback(async () => {
+    const data = await postRepository.getExplorePosts();
+    await Promise.all(
+      data
+        .filter((post) => post.image)
+        .map((post) => Image.prefetch(post.image).catch(() => false)),
+    );
+    setPosts(data);
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (posts.length) {
+        loadPosts().catch((error) =>
+          console.error("Failed to refresh posts:", error),
+        );
+      }
+    }, [loadPosts, posts.length]),
+  );
 
   // for gig post
   const [gigPosts, setGigPosts] = useState(getGigPosts());
@@ -180,27 +191,22 @@ export default function HomeScreen() {
   useEffect(() => {
     let mounted = true;
 
-    const loadPosts = async () => {
+    const initializePosts = async () => {
       seedMockDatabase();
-
-      const data = await postRepository.getExplorePosts();
-
-      if (!mounted) return;
-
-      await Promise.all(
-        data.map((post) => Image.prefetch(post.image).catch(() => false)),
-      );
-
-      if (!mounted) return;
-
-      setPosts(data);
+      if (mounted) await loadPosts();
     };
 
-    loadPosts();
+    initializePosts();
 
     return () => {
       mounted = false;
     };
+  }, [loadPosts]);
+
+  const openArticle = useCallback(async (post: ExplorePost) => {
+    const contents = await postRepository.getPostContents(post.id);
+    setSelectedArticleContents(contents);
+    setSelectedArticlePost(post);
   }, []);
 
   /* =========================
@@ -429,32 +435,37 @@ export default function HomeScreen() {
         }}
         loadingIndicatorColor="#C89B9B"
         loadingBackgroundColor="#F8F4F2">
-        {posts.map((post) => (
-          <Marker
-            key={post.id}
-            coordinate={{
-              latitude: post.latitude,
-              longitude: post.longitude,
-            }}
-            anchor={{
-              x: 0.5,
-              y: 1.25,
-            }}
-            tracksViewChanges={!loadedMarkers.has(post.id)}
-            onPress={() => handleMarkerPress(post)}>
-            <Pressable onLongPress={() => focusPost(post)} delayLongPress={500}>
-              <Image
-                source={{
-                  uri: post.image,
-                }}
-                style={styles.markerImage}
-                resizeMode="cover"
-                fadeDuration={0}
-                onLoad={() => handleMarkerImageLoad(post.id)}
-              />
-            </Pressable>
-          </Marker>
-        ))}
+        {posts
+          .filter((post) => post.post_type === "MEDIA")
+          .map((post) => (
+            // MEDIA Marker
+            <Marker
+              key={post.id}
+              coordinate={{
+                latitude: post.latitude,
+                longitude: post.longitude,
+              }}
+              anchor={{
+                x: 0.5,
+                y: 1.25,
+              }}
+              tracksViewChanges={!loadedMarkers.has(post.id)}
+              onPress={() => handleMarkerPress(post)}>
+              <Pressable
+                onLongPress={() => focusPost(post)}
+                delayLongPress={500}>
+                <Image
+                  source={{
+                    uri: post.image,
+                  }}
+                  style={styles.markerImage}
+                  resizeMode="cover"
+                  fadeDuration={0}
+                  onLoad={() => handleMarkerImageLoad(post.id)}
+                />
+              </Pressable>
+            </Marker>
+          ))}
 
         {/* event post marker */}
         {createdPosts.map((post) => (
@@ -476,8 +487,6 @@ export default function HomeScreen() {
             </View>
           </Marker>
         ))}
-
-        {/* Text/Caption post markers */}
 
         {/* Text/Caption post markers */}
         {textPosts.map((post) => (
@@ -516,7 +525,7 @@ export default function HomeScreen() {
               longitude: post.longitude,
             }}
             anchor={{ x: 0.5, y: 1 }}
-            onPress={() => setSelectedArticlePost(post)}>
+            onPress={() => openArticle(post)}>
             <View style={styles.articleMarker}>
               <Ionicons name="book-outline" size={16} color="#FFFFFF" />
               <Text style={styles.articleMarkerText} numberOfLines={2}>
@@ -558,6 +567,7 @@ export default function HomeScreen() {
       {selectedArticlePost && (
         <ArticlePostModal
           post={selectedArticlePost}
+          contents={selectedArticleContents}
           onClose={() => setSelectedArticlePost(null)}
         />
       )}
