@@ -26,6 +26,11 @@ import { seedMockDatabase } from "@/data/mock/seed";
 import { postRepository } from "@/data/repositories";
 import type { ExplorePost } from "@/data/repositories/PostRepository";
 
+import type { ArticlePost as StoredArticlePost } from "@/data/mock/articlePostStore";
+import {
+  getArticlePosts,
+  subscribeToArticlePosts,
+} from "@/data/mock/articlePostStore";
 import type { CreatedEventPost } from "@/data/mock/eventPostStore";
 import {
   getCreatedPosts,
@@ -36,7 +41,6 @@ import { getTextPosts, subscribeToTextPosts } from "@/data/mock/textPostStore";
 
 import type { GigPost } from "@/data/mock/gigPostStore";
 import { getGigPosts, subscribeToGigPosts } from "@/data/mock/gigPostStore";
-import type { PostContent } from "@/data/models/PostContent";
 
 interface MapRegion {
   latitude: number;
@@ -143,12 +147,21 @@ export default function HomeScreen() {
     };
   }, []);
 
-  const articlePosts = posts.filter((post) => post.post_type === "ARTICLE");
+  // Article posts are owned by articlePostStore, not mockSeedDatabase.
+  const [articlePosts, setArticlePosts] =
+    useState<StoredArticlePost[]>(getArticlePosts());
   const [selectedArticlePost, setSelectedArticlePost] =
-    useState<ExplorePost | null>(null);
-  const [selectedArticleContents, setSelectedArticleContents] = useState<
-    PostContent[]
-  >([]);
+    useState<StoredArticlePost | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToArticlePosts(() => {
+      setArticlePosts(getArticlePosts());
+    });
+
+    return () => {
+      unsubscribe;
+    };
+  }, []);
 
   const loadPosts = useCallback(async () => {
     const data = await postRepository.getExplorePosts();
@@ -203,9 +216,7 @@ export default function HomeScreen() {
     };
   }, [loadPosts]);
 
-  const openArticle = useCallback(async (post: ExplorePost) => {
-    const contents = await postRepository.getPostContents(post.id);
-    setSelectedArticleContents(contents);
+  const openArticle = useCallback((post: StoredArticlePost) => {
     setSelectedArticlePost(post);
   }, []);
 
@@ -567,7 +578,6 @@ export default function HomeScreen() {
       {selectedArticlePost && (
         <ArticlePostModal
           post={selectedArticlePost}
-          contents={selectedArticleContents}
           onClose={() => setSelectedArticlePost(null)}
         />
       )}

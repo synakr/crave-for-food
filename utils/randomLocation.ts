@@ -1,15 +1,12 @@
-const BASE_LOCATION = {
-  latitude: 23.84251,
-  longitude: 91.42521,
-};
+export function getRandomLocation() {
+  // Approximate geographic bounds of Tripura
+  const MIN_LATITUDE = 22.95;
+  const MAX_LATITUDE = 24.53;
+  const MIN_LONGITUDE = 91.15;
+  const MAX_LONGITUDE = 92.33;
 
-export function getRandomLocation(
-  latitude = BASE_LOCATION.latitude,
-  longitude = BASE_LOCATION.longitude,
-  radius = 0.001,
-) {
   return {
-    latitude: latitude + (Math.random() - 0.5) * 2 * radius,
-    longitude: longitude + (Math.random() - 0.5) * 2 * radius,
+    latitude: MIN_LATITUDE + Math.random() * (MAX_LATITUDE - MIN_LATITUDE),
+    longitude: MIN_LONGITUDE + Math.random() * (MAX_LONGITUDE - MIN_LONGITUDE),
   };
 }

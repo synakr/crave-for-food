@@ -38,6 +38,10 @@ export interface PostDraft {
   mediaUris?: string[];
   mediaKind?: "IMAGE" | "VIDEO" | "GIF";
   metadata?: Record<string, unknown>;
+
+  // Map marker coordinates
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface ComposerProps {

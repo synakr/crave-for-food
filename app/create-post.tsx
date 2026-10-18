@@ -20,6 +20,7 @@ import type {
   ComposerPostType,
   PostDraft,
 } from "@/components/PostComposer/types";
+import { addArticlePost } from "@/data/mock/articlePostStore";
 import { addCreatedPost } from "@/data/mock/eventPostStore";
 import { addGigPost } from "@/data/mock/gigPostStore";
 import { addTextPost } from "@/data/mock/textPostStore";
@@ -77,9 +78,7 @@ export default function CreatePostScreen() {
       // Generate the main map-marker location for this post.
       const existingPosts = await postRepository.getPosts();
       let postLocation =
-        draft.type === "CAPTION"
-          ? getRandomLocation(23.8328, 91.274)
-          : getRandomLocation();
+        draft.type === "CAPTION" ? getRandomLocation() : getRandomLocation();
       while (
         existingPosts.some(
           (post) =>
@@ -200,6 +199,27 @@ export default function CreatePostScreen() {
         post,
         contents,
       });
+
+      // Article map markers are rendered from articlePostStore, so publish
+      // the article there too after the database write succeeds.
+      if (draft.type === "ARTICLE") {
+        addArticlePost({
+          id: postId,
+          title: draft.title?.trim() ?? "Untitled",
+          body: draft.body?.trim() ?? "",
+          articleType: String(draft.metadata?.articleType ?? "Article"),
+          latitude: postLocation.latitude,
+          longitude: postLocation.longitude,
+          metadata: {
+            ...(Array.isArray(draft.metadata?.links)
+              ? { links: draft.metadata.links }
+              : {}),
+            ...(Array.isArray(draft.metadata?.locations)
+              ? { locations: draft.metadata.locations }
+              : {}),
+          },
+        });
+      }
 
       // Caption-based post
 
