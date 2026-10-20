@@ -1,7 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { ReactNode } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import PostActions from "./PostActions";
 import type { PostRendererProps } from "./types";
+
+type PostCardProps = PostRendererProps & {
+  children: ReactNode;
+  headerAccessory?: ReactNode;
+};
 
 export function PostCard({
   post,
@@ -10,7 +16,8 @@ export function PostCard({
   onComment,
   onSave,
   onPress,
-}: PostRendererProps & { children: React.ReactNode }) {
+  headerAccessory,
+}: PostCardProps) {
   const initials =
     post.authorName
       .trim()
@@ -19,25 +26,35 @@ export function PostCard({
       .map((part) => part[0])
       .join("")
       .toUpperCase() || "?";
+
   return (
     <Pressable
       onPress={() => onPress?.(post)}
       disabled={!onPress}
       style={styles.card}>
       <View style={styles.authorRow}>
-        {post.authorAvatar ? (
-          <Image source={{ uri: post.authorAvatar }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarFallback}>
-            <Text style={styles.initials}>{initials}</Text>
-          </View>
-        )}
-        <View style={{ flex: 1 }}>
+        <View style={styles.avatarGroup}>
+          {post.authorAvatar ? (
+            <Image source={{ uri: post.authorAvatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.initials}>{initials}</Text>
+            </View>
+          )}
+
+          {headerAccessory ? (
+            <View style={styles.headerAccessory}>{headerAccessory}</View>
+          ) : null}
+        </View>
+
+        <View style={styles.authorInfo}>
           <Text style={styles.author}>{post.authorName}</Text>
+
           {post.createdAt ? (
             <Text style={styles.time}>{post.createdAt}</Text>
           ) : null}
         </View>
+
         {post.location ? (
           <View style={styles.location}>
             <Ionicons name="location-outline" size={13} color="#686868" />
@@ -47,7 +64,9 @@ export function PostCard({
           </View>
         ) : null}
       </View>
+
       {children}
+
       <PostActions
         postId={post.id}
         likes={post.likes}
@@ -60,12 +79,15 @@ export function PostCard({
     </Pressable>
   );
 }
+
 export function PostTitle({ children }: { children: string }) {
   return <Text style={styles.title}>{children}</Text>;
 }
+
 export function PostBody({ children }: { children: string }) {
   return <Text style={styles.body}>{children}</Text>;
 }
+
 export const rendererStyles = StyleSheet.create({
   media: {
     width: "100%",
@@ -74,6 +96,7 @@ export const rendererStyles = StyleSheet.create({
     backgroundColor: "#E7E5E2",
     marginTop: 10,
   },
+
   badge: {
     alignSelf: "flex-start",
     borderRadius: 20,
@@ -82,19 +105,27 @@ export const rendererStyles = StyleSheet.create({
     paddingVertical: 5,
     marginTop: 9,
   },
-  badgeText: { color: "#6A5145", fontSize: 11, fontWeight: "700" },
+
+  badgeText: {
+    color: "#6A5145",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
   panel: {
     marginTop: 10,
     padding: 14,
     borderRadius: 14,
     backgroundColor: "#F8F6F3",
   },
+
   attachment: {
     marginTop: 10,
     fontSize: 13,
     color: "#725B4D",
   },
 });
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
@@ -104,13 +135,25 @@ const styles = StyleSheet.create({
     borderColor: "#ECE9E6",
     marginBottom: 12,
   },
-  authorRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+
+  authorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  avatarGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
   avatar: {
     width: 38,
     height: 38,
     borderRadius: 19,
     backgroundColor: "#EEEEEE",
   },
+
   avatarFallback: {
     width: 38,
     height: 38,
@@ -119,16 +162,58 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  initials: { fontSize: 12, fontWeight: "800", color: "#6D5548" },
-  author: { fontSize: 14, fontWeight: "700", color: "#222222" },
-  time: { fontSize: 11, color: "#888888", marginTop: 2 },
+
+  initials: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#6D5548",
+  },
+
+  headerAccessory: {
+    marginLeft: -7,
+    zIndex: 2,
+  },
+
+  authorInfo: {
+    flex: 1,
+  },
+
+  author: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#222222",
+  },
+
+  time: {
+    fontSize: 11,
+    color: "#888888",
+    marginTop: 2,
+  },
+
   location: {
     maxWidth: 130,
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
   },
-  locationText: { fontSize: 11, color: "#686868", flexShrink: 1 },
-  title: { marginTop: 10, fontSize: 17, fontWeight: "800", color: "#202020" },
-  body: { marginTop: 8, fontSize: 14, lineHeight: 21, color: "#454545" },
+
+  locationText: {
+    fontSize: 11,
+    color: "#686868",
+    flexShrink: 1,
+  },
+
+  title: {
+    marginTop: 10,
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#202020",
+  },
+
+  body: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#454545",
+  },
 });

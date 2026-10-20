@@ -1,9 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import type { ReactNode } from "react";
+import {
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import type { TextPost } from "@/data/mock/textPostStore";
-import { PostBody, PostCard } from "./PostRendererShell";
+import PostActions from "./PostActions";
 import type { PostRendererProps } from "./types";
 
 type CaptionLink = {
@@ -13,10 +23,100 @@ type CaptionLink = {
 
 type CaptionLocation = {
   name: string;
-  address?: string;
   latitude: number;
   longitude: number;
 };
+
+type PostCardProps = PostRendererProps & {
+  children: ReactNode;
+  headerAccessory?: ReactNode;
+};
+
+function PostCard({
+  post,
+  children,
+  onLike,
+  onComment,
+  onSave,
+  onPress,
+  headerAccessory,
+}: PostCardProps) {
+  const initials =
+    post.authorName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || "?";
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.headerRow}>
+        <View style={styles.identityGroup}>
+          {headerAccessory && (
+            <View style={styles.headerAccessory}>{headerAccessory}</View>
+          )}
+
+          {post.authorAvatar ? (
+            <Image source={{ uri: post.authorAvatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.initials}>{initials}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.authorInfo}>
+          <Text numberOfLines={1} style={styles.author}>
+            {post.authorName}
+          </Text>
+
+          {!!post.createdAt && (
+            <Text numberOfLines={1} style={styles.time}>
+              {post.createdAt}
+            </Text>
+          )}
+
+          {!!post.location && (
+            <View style={styles.postLocation}>
+              <Ionicons name="location-outline" size={12} color="#77716D" />
+              <Text numberOfLines={1} style={styles.postLocationText}>
+                {post.location}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {onPress && (
+          <Pressable
+            onPress={() => onPress(post)}
+            style={({ pressed }) => [
+              styles.openButton,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Open post"
+            hitSlop={8}>
+            <Ionicons name="arrow-forward" size={27} color="#FFFFFF" />
+          </Pressable>
+        )}
+      </View>
+
+      {children}
+
+      <PostActions
+        postId={post.id}
+        likes={post.likes}
+        comments={post.comments}
+        saved={post.saved}
+        onLike={onLike}
+        onComment={onComment}
+        onSave={onSave}
+      />
+    </View>
+  );
+}
 
 function isCaptionLink(value: unknown): value is CaptionLink {
   if (!value || typeof value !== "object") return false;
@@ -39,13 +139,13 @@ function isCaptionLocation(value: unknown): value is CaptionLocation {
     typeof location.latitude === "number" &&
     Number.isFinite(location.latitude) &&
     typeof location.longitude === "number" &&
-    Number.isFinite(location.longitude) &&
-    (location.address === undefined || typeof location.address === "string")
+    Number.isFinite(location.longitude)
   );
 }
 
 export default function CaptionPost(props: PostRendererProps) {
-  const metadata = props.post.metadata;
+  const { post } = props;
+  const metadata = post.metadata;
 
   const emoji = typeof metadata?.emoji === "string" ? metadata.emoji : null;
 
@@ -70,80 +170,59 @@ export default function CaptionPost(props: PostRendererProps) {
   };
 
   return (
-    <PostCard {...props}>
-      {emoji ? (
-        <Text style={{ fontSize: 32, marginBottom: 8 }}>{emoji}</Text>
-      ) : null}
+    <PostCard
+      {...props}
+      headerAccessory={
+        emoji ? (
+          <View style={styles.headerEmojiContainer}>
+            <Text style={styles.headerEmoji}>{emoji}</Text>
+          </View>
+        ) : undefined
+      }>
+      <View style={styles.cardContent}>
+        <Text style={styles.captionText}>{post.caption || ""}</Text>
 
-      <PostBody>{props.post.caption || ""}</PostBody>
+        {links.length > 0 && (
+          <View style={styles.metadataSection}>
+            {links.map((link, index) => (
+              <Pressable
+                key={`${link.url}-${index}`}
+                onPress={() => void openLink(link.url)}
+                accessibilityRole="link"
+                accessibilityLabel={link.title || link.url}
+                style={({ pressed }) => [
+                  styles.linkCard,
+                  pressed && styles.pressed,
+                ]}>
+                <Ionicons name="link-outline" size={15} color="#554638" />
 
-      {links.length > 0 && (
-        <View style={{ marginTop: 10, gap: 8 }}>
-          {links.map((link, index) => (
-            <Pressable
-              key={`${link.url}-${index}`}
-              onPress={() => {
-                void openLink(link.url);
-              }}
-              accessibilityRole="link"
-              accessibilityLabel={link.title || link.url}
-              style={{
-                padding: 10,
-                borderRadius: 10,
-                backgroundColor: "#F3F0ED",
-              }}>
-              <Text
-                style={{
-                  color: "#765640",
-                  fontWeight: "600",
-                }}>
-                {link.title || link.url}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+                <View style={styles.linkTextContainer}>
+                  <Text numberOfLines={1} style={styles.linkTitle}>
+                    {link.title || link.url}
+                  </Text>
+                </View>
 
-      {locations.length > 0 && (
-        <View style={{ marginTop: 10, gap: 8 }}>
-          {locations.map((location, index) => (
-            <View
-              key={`${location.latitude}-${location.longitude}-${index}`}
-              style={{
-                padding: 10,
-                borderRadius: 10,
-                backgroundColor: "#F3F0ED",
-              }}>
-              <Text
-                style={{
-                  color: "#302A26",
-                  fontWeight: "600",
-                }}>
-                {location.name}
-              </Text>
+                <Ionicons name="arrow-up-right-box" size={16} color="#80756B" />
+              </Pressable>
+            ))}
+          </View>
+        )}
 
-              {location.address ? (
-                <Text
-                  style={{
-                    color: "#77706B",
-                    marginTop: 3,
-                  }}>
-                  {location.address}
+        {locations.length > 0 && (
+          <View style={styles.locationsContainer}>
+            {locations.map((location, index) => (
+              <View
+                key={`${location.latitude}-${location.longitude}-${index}`}
+                style={styles.locationChip}>
+                <Ionicons name="location-outline" size={14} color="#554638" />
+                <Text numberOfLines={1} style={styles.locationChipText}>
+                  {location.name.trim() || "Location"}
                 </Text>
-              ) : null}
-
-              <Text
-                style={{
-                  color: "#77706B",
-                  fontSize: 11,
-                  marginTop: 3,
-                }}>
-                {location.latitude}, {location.longitude}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
     </PostCard>
   );
 }
@@ -158,62 +237,248 @@ export function CaptionPostModal({ post, onClose }: CaptionPostModalProps) {
     <Modal
       visible={!!post}
       transparent
-      animationType="slide"
+      animationType="fade"
+      statusBarTranslucent
       onRequestClose={onClose}>
       <View style={modalStyles.overlay}>
-        <View style={modalStyles.modal}>
-          <View style={modalStyles.header}>
-            <Text style={modalStyles.title}>Text post</Text>
-            <Pressable onPress={onClose} hitSlop={12}>
-              <Ionicons name="close-circle" size={28} color="#725B4D" />
-            </Pressable>
-          </View>
+        <Pressable
+          style={modalStyles.backdrop}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close text post"
+        />
 
-          {post && (
-            <CaptionPost
-              post={{
-                id: post.id,
-                type: "CAPTION",
-                authorName: "You",
-                caption: post.text,
-                metadata: {
-                  ...(post.emoji ? { emoji: post.emoji } : {}),
-                  ...(post.metadata ?? {}),
-                },
-                createdAt: "Just now",
-                likes: 0,
-                comments: 0,
-              }}
-            />
-          )}
-        </View>
+        {post && (
+          <View style={modalStyles.modal}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}>
+              <CaptionPost
+                post={{
+                  id: post.id,
+                  type: "CAPTION",
+                  authorName: "You",
+                  caption: post.text,
+                  metadata: {
+                    ...(post.emoji ? { emoji: post.emoji } : {}),
+                    ...(post.metadata ?? {}),
+                  },
+                  createdAt: "Just now",
+                  likes: 0,
+                  comments: 0,
+                }}
+              />
+            </ScrollView>
+          </View>
+        )}
       </View>
     </Modal>
   );
 }
 
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#FFFCFA",
+    borderRadius: 30,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#F0EBE6",
+    marginBottom: 14,
+    overflow: "hidden",
+  },
+
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 24,
+  },
+
+  identityGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#EDE9E4",
+    borderWidth: 2,
+    borderColor: "#FFFCFA",
+  },
+
+  avatarFallback: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#EDE7DF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFCFA",
+  },
+
+  initials: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#6D5548",
+  },
+
+  headerAccessory: {
+    marginRight: -8,
+    zIndex: 2,
+  },
+
+  authorInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+
+  author: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#292725",
+  },
+
+  time: {
+    fontSize: 11,
+    color: "#89827D",
+  },
+
+  postLocation: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    minWidth: 0,
+  },
+
+  postLocationText: {
+    fontSize: 10,
+    color: "#77716D",
+    flexShrink: 1,
+  },
+
+  openButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#292929",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  headerEmojiContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 19,
+    backgroundColor: "#292929",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFCFA",
+  },
+
+  headerEmoji: {
+    fontSize: 30,
+  },
+
+  cardContent: {
+    gap: 16,
+  },
+
+  captionText: {
+    fontSize: 27,
+    lineHeight: 36,
+    fontWeight: "400",
+    letterSpacing: -0.8,
+    color: "#292725",
+    fontFamily: "System",
+  },
+
+  metadataSection: {
+    gap: 7,
+  },
+
+  linkCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    gap: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    borderRadius: 12,
+    backgroundColor: "#F4EFE9",
+    borderWidth: 1,
+    borderColor: "#EBE2D8",
+  },
+
+  linkTextContainer: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+
+  linkTitle: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "600",
+    color: "#302D29",
+  },
+
+  locationsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+
+  locationChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 11,
+    backgroundColor: "#F4EFE9",
+    borderWidth: 1,
+    borderColor: "#EBE2D8",
+  },
+
+  locationChipText: {
+    flexShrink: 1,
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "600",
+    color: "#302D29",
+  },
+
+  pressed: {
+    opacity: 0.7,
+  },
+});
+
 const modalStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.35)",
-  },
-  modal: {
-    padding: 16,
-    paddingBottom: 32,
-    backgroundColor: "#F8F6F3",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  header: {
-    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 20,
+    backgroundColor: "rgba(27, 25, 23, 0.42)",
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#202020",
+
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+  },
+
+  modal: {
+    width: "100%",
+    maxWidth: 420,
+    maxHeight: "100%",
+    flexShrink: 1,
   },
 });

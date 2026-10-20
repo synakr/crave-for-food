@@ -486,15 +486,10 @@ export default function HomeScreen() {
               latitude: post.latitude,
               longitude: post.longitude,
             }}
-            anchor={{
-              x: 0.5,
-              y: 1,
-            }}
+            anchor={{ x: 0.5, y: 1 }}
             onPress={() => setSelectedCreatedPost(post)}>
             <View style={styles.createdMarker}>
-              <Text style={styles.createdMarkerText} numberOfLines={2}>
-                {post.title}
-              </Text>
+              <Ionicons name="calendar-outline" size={22} color="#FFFFFF" />
             </View>
           </Marker>
         ))}
@@ -509,20 +504,10 @@ export default function HomeScreen() {
             }}
             anchor={{ x: 0.5, y: 1 }}
             onPress={() => setSelectedTextPost(post)}>
-            <View style={styles.textPostMarkerContainer}>
-              {post.emoji ? (
-                <View style={styles.textPostMarkerEmoji}>
-                  <Text style={styles.textPostMarkerEmojiText}>
-                    {post.emoji}
-                  </Text>
-                </View>
-              ) : null}
-
-              <View style={styles.textPostMarker}>
-                <Text style={styles.textPostMarkerText} numberOfLines={3}>
-                  {post.text}
-                </Text>
-              </View>
+            <View style={styles.textPostMarkerEmoji}>
+              <Text style={styles.textPostMarkerEmojiText}>
+                {post.emoji || "🌸"}
+              </Text>
             </View>
           </Marker>
         ))}
@@ -538,10 +523,7 @@ export default function HomeScreen() {
             anchor={{ x: 0.5, y: 1 }}
             onPress={() => openArticle(post)}>
             <View style={styles.articleMarker}>
-              <Ionicons name="book-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.articleMarkerText} numberOfLines={2}>
-                {post.title}
-              </Text>
+              <Ionicons name="book-outline" size={22} color="#FFFFFF" />
             </View>
           </Marker>
         ))}
@@ -557,10 +539,7 @@ export default function HomeScreen() {
             anchor={{ x: 0.5, y: 1 }}
             onPress={() => setSelectedGigPost(post)}>
             <View style={styles.gigMarker}>
-              <Ionicons name="briefcase-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.gigMarkerText} numberOfLines={2}>
-                {post.title}
-              </Text>
+              <Ionicons name="briefcase-outline" size={22} color="#FFFFFF" />
             </View>
           </Marker>
         ))}
@@ -709,22 +688,15 @@ const styles = StyleSheet.create({
 
   // event marker
   createdMarker: {
-    maxWidth: 170,
-    minWidth: 90,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#111111",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 5,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#725B4D",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    elevation: 6,
   },
 
   createdMarkerText: {
@@ -818,15 +790,12 @@ const styles = StyleSheet.create({
 
   // For styling article based post
   articleMarker: {
-    maxWidth: 190,
-    minWidth: 110,
-    flexDirection: "row",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "#725B4D",
+    justifyContent: "center",
+    backgroundColor: "#5275A5",
     borderWidth: 2,
     borderColor: "#FFFFFF",
     elevation: 6,
@@ -840,14 +809,11 @@ const styles = StyleSheet.create({
 
   // gig marker style
   gigMarker: {
-    maxWidth: 190,
-    minWidth: 100,
-    flexDirection: "row",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
+    justifyContent: "center",
     backgroundColor: "#477B69",
     borderWidth: 2,
     borderColor: "#FFFFFF",
