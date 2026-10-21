@@ -21,24 +21,24 @@ export type CreatedEventPost = {
 
 const posts: CreatedEventPost[] = [
   {
-    id: "mock-image-event",
-    category: "Meetup",
-    title: "Sunset Coding Meetup",
+    id: "mock-image-event-2",
+    category: "Workshop",
+    title: "Build Your First AI Project",
     description:
-      "A relaxed evening meetup for developers, builders, and anyone interested in technology. Bring your laptop, share what you're building, and meet other people from the community.",
-    date: "Saturday, October 10",
-    startTime: "5:00 PM",
-    endTime: "7:30 PM",
+      "Join a hands-on AI workshop where students and developers explore practical AI tools, build a small working project, and exchange ideas. Bring your laptop and curiosity!",
+    date: "Sunday, October 25",
+    startTime: "10:00 AM",
+    endTime: "1:00 PM",
     location: "NIT Agartala Campus",
-    audience: "Students & Developers",
+    audience: "Students & Tech Enthusiasts",
     imageUri:
-      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80",
-    latitude: 23.842334,
-    longitude: 91.4267382,
+      "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80",
+    latitude: 23.838421,
+    longitude: 91.423156,
     createdAt: new Date().toISOString(),
-    likes: 24,
-    comments: 7,
-    interested: 18,
+    likes: 32,
+    comments: 9,
+    interested: 26,
   },
   {
     id: "mock-text-event",
